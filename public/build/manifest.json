@@ -1,0 +1,118 @@
+{
+  "_PrimaryButton-DaqITeL-.js": {
+    "file": "assets/PrimaryButton-DaqITeL-.js",
+    "name": "PrimaryButton",
+    "imports": [
+      "resources/js/app.js",
+      "_TextInput-B-zwx02T.js"
+    ]
+  },
+  "_TextInput-B-zwx02T.js": {
+    "file": "assets/TextInput-B-zwx02T.js",
+    "name": "TextInput",
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "_index-COW3oN8D.js": {
+    "file": "assets/index-COW3oN8D.js",
+    "name": "index",
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
+  "resources/js/Pages/Profile/Edit.vue": {
+    "file": "assets/Edit-yw4y7WJF.js",
+    "name": "Edit",
+    "src": "resources/js/Pages/Profile/Edit.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_TextInput-B-zwx02T.js",
+      "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
+      "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
+      "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
+      "_PrimaryButton-DaqITeL-.js"
+    ]
+  },
+  "resources/js/Pages/Profile/Partials/DeleteUserForm.vue": {
+    "file": "assets/DeleteUserForm-CPzLkqbC.js",
+    "name": "DeleteUserForm",
+    "src": "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_TextInput-B-zwx02T.js"
+    ]
+  },
+  "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue": {
+    "file": "assets/UpdatePasswordForm-CtqhDIHP.js",
+    "name": "UpdatePasswordForm",
+    "src": "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_TextInput-B-zwx02T.js",
+      "_PrimaryButton-DaqITeL-.js"
+    ]
+  },
+  "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue": {
+    "file": "assets/UpdateProfileInformationForm-DIhNvgEP.js",
+    "name": "UpdateProfileInformationForm",
+    "src": "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_TextInput-B-zwx02T.js",
+      "_PrimaryButton-DaqITeL-.js"
+    ]
+  },
+  "resources/js/Pages/Subprodutos/Create.vue": {
+    "file": "assets/Create-G2ckRD71.js",
+    "name": "Create",
+    "src": "resources/js/Pages/Subprodutos/Create.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_index-COW3oN8D.js"
+    ],
+    "css": [
+      "assets/Create-SsYe6lSH.css"
+    ]
+  },
+  "resources/js/Pages/Subprodutos/Index.vue": {
+    "file": "assets/Index-BL_5km6B.js",
+    "name": "Index",
+    "src": "resources/js/Pages/Subprodutos/Index.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_index-COW3oN8D.js"
+    ],
+    "css": [
+      "assets/Create-SsYe6lSH.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-C9SJzKsp.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "dynamicImports": [
+      "resources/js/Pages/Profile/Edit.vue",
+      "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
+      "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
+      "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
+      "resources/js/Pages/Subprodutos/Create.vue",
+      "resources/js/Pages/Subprodutos/Index.vue"
+    ]
+  },
+  "resources/sass/app.scss": {
+    "file": "assets/app-CvM0rU53.css",
+    "src": "resources/sass/app.scss",
+    "isEntry": true,
+    "names": [
+      "app.css"
+    ]
+  }
+}
