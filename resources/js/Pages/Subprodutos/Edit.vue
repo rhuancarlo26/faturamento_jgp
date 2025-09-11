@@ -9,32 +9,34 @@ const props = defineProps({
 });
 
 const form = useForm({
-    rodovia: props.subproduto?.rodovia || '',
-    data_aprovacao: props.subproduto?.data_aprovacao || '',
-    sei: props.subproduto?.sei || '',
-    oficio_numero: props.subproduto?.oficio_numero || '',
-    sei_versao_aprovada: props.subproduto?.sei_versao_aprovada || '',
-    subproduto: props.subproduto?.subproduto || '',
-    cod_siac: props.subproduto?.cod_siac || '',
+    rodovia: (props.subproduto?.rodovia || ''),
+    data_aprovacao: (props.subproduto?.data_aprovacao || ''),
+    sei: (props.subproduto?.sei || ''),
+    oficio_numero: (props.subproduto?.oficio_numero || ''),
+    sei_versao_aprovada: (props.subproduto?.sei_versao_aprovada || ''),
+    subproduto: (props.subproduto?.id_subproduto || ''), // Usa id_subproduto como chave
+    cod_siac: (props.subproduto?.cod_siac || ''),
+    quantidade: (props.subproduto?.quantidade || ''),
+    unidade: (props.subproduto?.unidade || ''),
+    quantidade_medida: (props.subproduto?.quantidade_medida || ''),
 });
 
 const flashSuccess = ref(null);
-const selectedSubproduto = ref(props.subproduto?.subproduto || '');
+const selectedSubproduto = ref(props.subproduto?.id_subproduto || ''); // Inicializa com id_subproduto
 
-// Atualizar o formulário se os props mudarem
 watch(() => props.subproduto, (newSubproduto) => {
-    console.log('Subproduto recebido:', newSubproduto);
     if (newSubproduto && Object.keys(newSubproduto).length > 0) {
         form.rodovia = newSubproduto.rodovia || '';
         form.data_aprovacao = newSubproduto.data_aprovacao || '';
         form.sei = newSubproduto.sei || '';
         form.oficio_numero = newSubproduto.oficio_numero || '';
         form.sei_versao_aprovada = newSubproduto.sei_versao_aprovada || '';
-        form.subproduto = newSubproduto.subproduto || '';
+        form.subproduto = newSubproduto.id_subproduto || '';
         form.cod_siac = newSubproduto.cod_siac || '';
-        selectedSubproduto.value = newSubproduto.subproduto || '';
-    } else {
-        console.error('Subproduto inválido ou vazio:', newSubproduto);
+        form.quantidade = newSubproduto.quantidade || '';
+        form.unidade = newSubproduto.unidade || '';
+        form.quantidade_medida = newSubproduto.quantidade_medida || '';
+        selectedSubproduto.value = newSubproduto.id_subproduto || ''; // Sincroniza
     }
 }, { immediate: true });
 
@@ -43,8 +45,9 @@ const fetchSubproduto = async (subproduto) => {
         try {
             const response = await fetch('/subprodutos/fetch/' + encodeURIComponent(subproduto));
             const data = await response.json();
-            form.subproduto = data.subproduto || subproduto;
+            form.subproduto = subproduto;
             form.cod_siac = data.cod_siac || '';
+            form.unidade = data.unidade_de_medida || '';
         } catch (error) {
             console.log('Erro na requisição:', error);
         }
@@ -61,8 +64,6 @@ const submit = () => {
                 console.log('Erros de validação:', errors);
             },
         });
-    } else {
-        console.error('ID do subproduto não encontrado');
     }
 };
 </script>
@@ -163,7 +164,7 @@ const submit = () => {
                             <label class="form-label font-weight-semibold">Subproduto</label>
                             <select v-model="selectedSubproduto" @change="fetchSubproduto(selectedSubproduto)" class="form-control" required>
                                 <option value="">Selecione</option>
-                                <option v-for="option in subprodutoOptions" :key="option.subproduto" :value="option.subproduto">
+                                <option v-for="option in subprodutoOptions" :key="option.id" :value="option.subproduto">
                                     {{ option.subproduto + ' - ' + option.descricao_revisada }}
                                 </option>
                             </select>
@@ -172,6 +173,19 @@ const submit = () => {
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Código SIAC</label>
                             <input type="text" v-model="form.cod_siac" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Unidade</label>
+                            <input type="text" v-model="form.unidade" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Quantidade</label>
+                            <input type="number" v-model.number="form.quantidade" class="form-control" required>
+                            <div class="invalid-feedback">Por favor, insira uma quantidade válida.</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Quantidade Medida</label>
+                            <input type="number" step="0.01" v-model.number="form.quantidade_medida" class="form-control">
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">SEI - Versão Aprovada</label>

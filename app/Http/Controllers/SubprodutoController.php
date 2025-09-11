@@ -23,7 +23,7 @@ class SubprodutoController extends Controller
 
     public function create()
     {
-        $subprodutoOptions = Subproduto::all(['subproduto', 'cod_siac', 'descricao_revisada']);
+        $subprodutoOptions = Subproduto::all(['id', 'subproduto', 'cod_siac', 'unidade_de_medida', 'descricao_revisada']);
         return Inertia::render('Subprodutos/Create', [
             'subprodutoOptions' => $subprodutoOptions,
             'user' => auth()->user(),
@@ -40,9 +40,21 @@ class SubprodutoController extends Controller
             'sei_versao_aprovada' => 'nullable',
             'subproduto' => 'required',
             'cod_siac' => 'nullable',
+            'quantidade' => 'required|integer|min:1',
+            'unidade' => 'nullable',
+            'quantidade_medida' => 'nullable|numeric',
         ]);
 
-        RegistroSubproduto::create(array_merge($request->all(), ['id_user' => auth()->id()]));
+        $subprodutoData = Subproduto::where('subproduto', $request->subproduto)->first();
+        $data = array_merge($request->all(), [
+            'id_subproduto' => $request->subproduto, // Mantém o valor de subproduto (ex.: "1.1.1")
+            'subproduto' => $subprodutoData->descricao_revisada ?? '', // Popula com descricao_revisada
+            'cod_siac' => $subprodutoData->cod_siac ?? $request->cod_siac,
+            'unidade' => $subprodutoData->unidade_de_medida ?? $request->unidade,
+            'id_user' => auth()->id(),
+        ]);
+
+        RegistroSubproduto::create($data);
         return redirect()->route('subprodutos.index')->with('success', 'Subproduto cadastrado!');
     }
 
@@ -58,10 +70,9 @@ class SubprodutoController extends Controller
     public function edit($id)
     {
         $subproduto = RegistroSubproduto::findOrFail($id);
-        \Log::info('Subproduto para edição:', ['id' => $id, 'subproduto' => $subproduto->toArray()]);
-        $subprodutoOptions = Subproduto::all(['subproduto', 'cod_siac', 'descricao_revisada'])->toArray();
+        $subprodutoOptions = Subproduto::all(['id', 'subproduto', 'cod_siac', 'unidade_de_medida', 'descricao_revisada']);
         return Inertia::render('Subprodutos/Edit', [
-            'subproduto' => $subproduto->toArray(),
+            'subproduto' => $subproduto,
             'subprodutoOptions' => $subprodutoOptions,
             'user' => auth()->user(),
         ]);
@@ -78,9 +89,20 @@ class SubprodutoController extends Controller
             'sei_versao_aprovada' => 'nullable',
             'subproduto' => 'required',
             'cod_siac' => 'nullable',
+            'quantidade' => 'required|integer|min:1',
+            'unidade' => 'nullable',
+            'quantidade_medida' => 'nullable|numeric',
         ]);
 
-        $subproduto->update($request->all());
+        $subprodutoData = Subproduto::where('subproduto', $request->subproduto)->first();
+        $data = array_merge($request->all(), [
+            'id_subproduto' => $request->subproduto, // Mantém o valor de subproduto
+            'subproduto' => $subprodutoData->descricao_revisada ?? $subproduto->subproduto, // Atualiza com descricao_revisada
+            'cod_siac' => $subprodutoData->cod_siac ?? $request->cod_siac,
+            'unidade' => $subprodutoData->unidade_de_medida ?? $request->unidade,
+        ]);
+
+        $subproduto->update($data);
         return redirect()->route('subprodutos.index')->with('success', 'Subproduto atualizado!');
     }
 
@@ -91,6 +113,7 @@ class SubprodutoController extends Controller
         return response()->json($subprodutoData ? [
             'subproduto' => $subprodutoData->subproduto . ' - ' . $subprodutoData->descricao_revisada,
             'cod_siac' => $subprodutoData->cod_siac,
-        ] : ['subproduto' => '', 'cod_siac' => '']);
+            'unidade_de_medida' => $subprodutoData->unidade_de_medida,
+        ] : ['subproduto' => '', 'cod_siac' => '', 'unidade_de_medida' => '']);
     }
 }

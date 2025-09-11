@@ -13,22 +13,24 @@ const form = useForm({
     sei: '',
     oficio_numero: '',
     sei_versao_aprovada: '',
-    subproduto: '',
+    subproduto: '', // Valor de subproduto (ex.: "1.1.1")
     cod_siac: '',
+    quantidade: '',
+    unidade: '',
+    quantidade_medida: '',
 });
 
 const flashSuccess = ref(null);
-const selectedSubproduto = ref('');
+const selectedSubproduto = ref(''); // Armazena o valor de subproduto
 
 const fetchSubproduto = async (subproduto) => {
     if (subproduto) {
         try {
             const response = await fetch('/subprodutos/fetch/' + encodeURIComponent(subproduto));
             const data = await response.json();
-            console.log('Dados recebidos:', data);
-            form.subproduto = data.subproduto || subproduto;
+            form.subproduto = subproduto;
             form.cod_siac = data.cod_siac || '';
-            console.log('Atribuído cod_siac:', form.cod_siac);
+            form.unidade = data.unidade_de_medida || '';
         } catch (error) {
             console.log('Erro na requisição:', error);
         }
@@ -41,7 +43,6 @@ const submit = () => {
             form.reset();
             selectedSubproduto.value = '';
             flashSuccess.value = page.props.flash?.success || 'Subproduto cadastrado!';
-            console.log('Sucesso: dados cadastrados');
         },
         onError: (errors) => {
             console.log('Erros de validação:', errors);
@@ -154,7 +155,7 @@ const logout = () => {
                             <label class="form-label font-weight-semibold">Subproduto</label>
                             <select v-model="selectedSubproduto" @change="fetchSubproduto(selectedSubproduto)" class="form-control" required>
                                 <option value="">Selecione</option>
-                                <option v-for="option in subprodutoOptions" :key="option.subproduto" :value="option.subproduto">
+                                <option v-for="option in subprodutoOptions" :key="option.id" :value="option.subproduto">
                                     {{ option.subproduto + ' - ' + option.descricao_revisada }}
                                 </option>
                             </select>
@@ -163,6 +164,19 @@ const logout = () => {
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Código SIAC</label>
                             <input type="text" v-model="form.cod_siac" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Unidade</label>
+                            <input type="text" v-model="form.unidade" class="form-control bg-light" readonly>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Quantidade</label>
+                            <input type="number" v-model.number="form.quantidade" class="form-control" required>
+                            <div class="invalid-feedback">Por favor, insira uma quantidade válida.</div>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="form-label font-weight-semibold">Quantidade Medida</label>
+                            <input type="number" step="0.01" v-model.number="form.quantidade_medida" class="form-control">
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">SEI - Versão Aprovada</label>

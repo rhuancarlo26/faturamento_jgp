@@ -86,7 +86,7 @@ const logout = () => {
 
             <!-- Conteúdo principal -->
             <div class="flex-grow-1 p-4">
-                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1700px;">
+                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1690px;">
                     <h3 class="text-center mb-4 font-weight-bold" style="color: #4B5563; font-size: 1.3rem;">CONSULTAR SUBPRODUTOS APROVADOS</h3>
                     <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ flashSuccess }}
@@ -114,27 +114,37 @@ const logout = () => {
                             <thead class="thead-light">
                                 <tr>
                                     <th class="text-center align-middle">Rodovia</th>
-                                    <th class="text-center align-middle">Subproduto</th>
-                                    <th class="text-center align-middle">SEI Versão Aprovada</th>
+                                    <th class="text-center align-middle">Prod. Subproduto</th>
                                     <th class="text-center align-middle">Cod.SIAC</th>
+                                    <th class="text-center align-middle">Descrição do Serviço</th>
+                                    <th class="text-center align-middle">Quantidade</th>
+                                    <th class="text-center align-middle">Unidade</th>
+                                    <th class="text-center align-middle">Qtd. Medida</th>
+                                    <th class="text-center align-middle">SEI Versão Aprovada</th>
                                     <th class="text-center align-middle">Parecer Técnico/Portaria/Ofício Aprovação - SEI</th>
                                     <th v-if="user" class="text-center align-middle">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="subproduto in subprodutos" :key="subproduto.id">
-                                    <td class="text-center">{{ subproduto.rodovia }}</td>
-                                    <td class="text-center">{{ subproduto.subproduto }}</td>
-                                    <td class="text-center">{{ subproduto.sei_versao_aprovada || '-' }}</td>
-                                    <td class="text-center">{{ subproduto.cod_siac || '-' }}</td>
-                                    <td class="text-center">{{ subproduto.oficio_numero || '-' }}</td>
-                                    <td v-if="user" class="text-center">
-                                        <button class="btn btn-danger btn-sm mr-2" @click="deleteSubproduto(subproduto.id)">Excluir</button>
-                                        <a :href="`/subprodutos/${subproduto.id}/edit`" class="btn btn-warning btn-sm">Editar</a>
+                                    <td class="text-center align-middle">{{ subproduto.rodovia }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.id_subproduto || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.cod_siac || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.subproduto || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.quantidade || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.unidade || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.quantidade_medida || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.sei_versao_aprovada || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.oficio_numero || '-' }}</td>
+                                    <td v-if="user" class="text-center align-middle">
+                                        <div class="d-flex justify-content-center align-items-center">
+                                            <button class="btn btn-danger btn-sm mr-2" @click="deleteSubproduto(subproduto.id)">Excluir</button>
+                                            <a :href="`/subprodutos/${subproduto.id}/edit`" class="btn btn-warning btn-sm">Editar</a>
+                                        </div>
                                     </td>
                                 </tr>
                                 <tr v-if="!subprodutos.length">
-                                    <td :colspan="user ? 6 : 5" class="text-center">Nenhum subproduto encontrado.</td>
+                                    <td :colspan="user ? 10 : 9" class="text-center align-middle">Nenhum subproduto encontrado.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -151,4 +161,20 @@ const logout = () => {
 <style>
 @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
 @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
+
+/* Ajustes personalizados para os botões na coluna de ações */
+.action-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    white-space: nowrap; /* Evita que o texto quebre */
+    padding: 0.25rem 0.5rem; /* Ajusta o padding para um tamanho mais compacto */
+}
+
+.action-buttons .btn + .btn {
+    margin-left: 0.5rem; /* Espaçamento entre os botões */
+}
 </style>
