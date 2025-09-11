@@ -86,7 +86,7 @@ const logout = () => {
 
             <!-- Conteúdo principal -->
             <div class="flex-grow-1 p-4">
-                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1500px;">
+                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1700px;">
                     <h3 class="text-center mb-4 font-weight-bold" style="color: #4B5563; font-size: 1.3rem;">CONSULTAR SUBPRODUTOS APROVADOS</h3>
                     <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ flashSuccess }}
@@ -129,7 +129,8 @@ const logout = () => {
                                     <td class="text-center">{{ subproduto.cod_siac || '-' }}</td>
                                     <td class="text-center">{{ subproduto.oficio_numero || '-' }}</td>
                                     <td v-if="user" class="text-center">
-                                        <button class="btn btn-danger btn-sm" @click="deleteSubproduto(subproduto.id)">Excluir</button>
+                                        <button class="btn btn-danger btn-sm mr-2" @click="deleteSubproduto(subproduto.id)">Excluir</button>
+                                        <a :href="`/subprodutos/${subproduto.id}/edit`" class="btn btn-warning btn-sm">Editar</a>
                                     </td>
                                 </tr>
                                 <tr v-if="!subprodutos.length">

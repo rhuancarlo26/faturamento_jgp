@@ -17,7 +17,11 @@ class RegistroSubproduto extends Model
         'sei_versao_aprovada',
         'subproduto',
         'cod_siac',
-        'id_user'
+        'id_user',
+        'quantidade',
+        'unidade',
+        'quantidade_medida',
+        'id_subproduto'
     ];
 
     protected $dates = ['deleted_at'];

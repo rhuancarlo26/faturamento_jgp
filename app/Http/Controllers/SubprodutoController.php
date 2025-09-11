@@ -49,10 +49,39 @@ class SubprodutoController extends Controller
     public function destroy($id)
     {
         $subproduto = RegistroSubproduto::findOrFail($id);
-        $subproduto->id_user = auth()->id(); // Preenche id_user
+        $subproduto->id_user = auth()->id();
         $subproduto->save();
-        $subproduto->delete(); // Ativa soft delete
+        $subproduto->delete();
         return redirect()->route('subprodutos.index')->with('success', 'Subproduto excluído!');
+    }
+
+    public function edit($id)
+    {
+        $subproduto = RegistroSubproduto::findOrFail($id);
+        \Log::info('Subproduto para edição:', ['id' => $id, 'subproduto' => $subproduto->toArray()]);
+        $subprodutoOptions = Subproduto::all(['subproduto', 'cod_siac', 'descricao_revisada'])->toArray();
+        return Inertia::render('Subprodutos/Edit', [
+            'subproduto' => $subproduto->toArray(),
+            'subprodutoOptions' => $subprodutoOptions,
+            'user' => auth()->user(),
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $subproduto = RegistroSubproduto::findOrFail($id);
+        $request->validate([
+            'rodovia' => 'required',
+            'data_aprovacao' => 'required|date',
+            'sei' => 'nullable',
+            'oficio_numero' => 'nullable',
+            'sei_versao_aprovada' => 'nullable',
+            'subproduto' => 'required',
+            'cod_siac' => 'nullable',
+        ]);
+
+        $subproduto->update($request->all());
+        return redirect()->route('subprodutos.index')->with('success', 'Subproduto atualizado!');
     }
 
     public function fetch($subproduto)
