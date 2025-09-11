@@ -1,8 +1,9 @@
 <script setup>
 import { useForm } from '@inertiajs/inertia-vue3';
-import { ref } from 'vue';
+import { ref, onMounted, defineProps } from 'vue';
 
-defineProps({
+// Definir props explicitamente
+const props = defineProps({
     subprodutos: Array,
     dataInicial: String,
     dataFinal: String,
@@ -45,6 +46,40 @@ const logout = () => {
         },
     });
 };
+
+// Função para baixar a tabela em Excel
+const downloadExcel = () => {
+    if (typeof XLSX === 'undefined') {
+        console.error('XLSX library not loaded');
+        return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(props.subprodutos.map(item => ({
+        Rodovia: item.rodovia,
+        'Prod. Subproduto': item.id_subproduto,
+        'Cod.SIAC': item.cod_siac,
+        'Descrição do Serviço': item.subproduto,
+        Quantidade: item.quantidade,
+        Unidade: item.unidade,
+        'Qtd. Medida': item.quantidade_medida,
+        'SEI Versão Aprovada': item.sei_versao_aprovada,
+        'Parecer Técnico/Portaria/Ofício Aprovação - SEI': item.oficio_numero
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Subprodutos');
+    XLSX.writeFile(workbook, 'subprodutos.xlsx');
+};
+
+// Carregar a biblioteca XLSX quando o componente for montado
+onMounted(() => {
+    if (!window.XLSX) {
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        script.async = true;
+        script.onload = () => console.log('XLSX loaded successfully');
+        script.onerror = () => console.error('Failed to load XLSX library');
+        document.head.appendChild(script);
+    }
+});
 </script>
 
 <template>
@@ -105,10 +140,15 @@ const logout = () => {
                         </div>
                         <div class="form-group col-md-4 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary mr-2" :disabled="form.processing">CONSULTAR</button>
-                            <button type="button" class="btn btn-outline-secondary" @click="clear">LIMPAR</button>
+                            <button type="type" class="btn btn-outline-secondary" @click="clear">LIMPAR</button>
                         </div>
                     </form>
-                    <h3 class="text-center mb-5 font-weight-bold" style="color: #4B5563; font-size: 1.25rem;">RELAÇÃO DOS SUBPRODUTOS APROVADOS</h3>
+                    <h3 class="text-center mb-3 font-weight-bold" style="color: #4B5563; font-size: 1.25rem;">RELAÇÃO DOS SUBPRODUTOS APROVADOS</h3>
+                    <div class="mb-3 text-right">
+                        <button @click="downloadExcel" class="btn btn-success">
+                            <i class="fas fa-file-excel mr-2"></i> Baixar
+                        </button>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
                             <thead class="thead-light">
@@ -138,7 +178,7 @@ const logout = () => {
                                     <td class="text-center align-middle">{{ subproduto.oficio_numero || '-' }}</td>
                                     <td v-if="user" class="text-center align-middle">
                                         <div class="d-flex justify-content-center align-items-center">
-                                            <button class="btn btn-danger btn-sm mr-2" @click="deleteSubproduto(subproduto.id)">Excluir</button>
+                                            <button class="btn btn-danger btn-sm mr-1" @click="deleteSubproduto(subproduto.id)">Excluir</button>
                                             <a :href="`/subprodutos/${subproduto.id}/edit`" class="btn btn-warning btn-sm">Editar</a>
                                         </div>
                                     </td>
@@ -148,9 +188,6 @@ const logout = () => {
                                 </tr>
                             </tbody>
                         </table>
-                    </div>
-                    <div class="mt-4 text-right">
-                        <a href="/subprodutos/create" class="btn btn-success">+ CADASTRAR</a>
                     </div>
                 </div>
             </div>
@@ -162,7 +199,18 @@ const logout = () => {
 @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
 @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
 
-/* Ajustes personalizados para os botões na coluna de ações */
+/* Ajustes personalizados para a tabela */
+.table td {
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+
+.table th {
+    vertical-align: middle !important;
+    text-align: center !important;
+}
+
+/* Ajustes para os botões na coluna de ações */
 .action-buttons {
     display: flex;
     align-items: center;
@@ -170,11 +218,16 @@ const logout = () => {
 }
 
 .action-buttons .btn {
-    white-space: nowrap; /* Evita que o texto quebre */
-    padding: 0.25rem 0.5rem; /* Ajusta o padding para um tamanho mais compacto */
+    white-space: nowrap;
+    padding: 0.25rem 0.5rem;
+    margin: 0 0.25rem;
 }
 
-.action-buttons .btn + .btn {
-    margin-left: 0.5rem; /* Espaçamento entre os botões */
+.action-buttons .btn:first-child {
+    margin-left: 0;
+}
+
+.action-buttons .btn:last-child {
+    margin-right: 0;
 }
 </style>

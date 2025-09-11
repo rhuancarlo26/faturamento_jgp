@@ -13,7 +13,7 @@ const form = useForm({
     sei: '',
     oficio_numero: '',
     sei_versao_aprovada: '',
-    subproduto: '', // Valor de subproduto (ex.: "1.1.1")
+    subproduto: '',
     cod_siac: '',
     quantidade: '',
     unidade: '',
@@ -21,7 +21,7 @@ const form = useForm({
 });
 
 const flashSuccess = ref(null);
-const selectedSubproduto = ref(''); // Armazena o valor de subproduto
+const selectedSubproduto = ref('');
 
 const fetchSubproduto = async (subproduto) => {
     if (subproduto) {
@@ -109,16 +109,18 @@ const logout = () => {
                     <form @submit.prevent="submit" class="needs-validation" novalidate>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Ofício Nº</label>
-                            <input type="text" v-model="form.oficio_numero" class="form-control" placeholder="Digite o número do ofício">
+                            <input type="text" v-model="form.oficio_numero" class="form-control" placeholder="Digite o número do ofício" required>
+                            <div v-if="form.errors.oficio_numero" class="text-danger">{{ form.errors.oficio_numero }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">SEI</label>
-                            <input type="text" v-model="form.sei" class="form-control" placeholder="Digite o SEI">
+                            <input type="text" v-model="form.sei" class="form-control" placeholder="Digite o SEI" required>
+                            <div v-if="form.errors.sei" class="text-danger">{{ form.errors.sei }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Data</label>
                             <input type="date" v-model="form.data_aprovacao" class="form-control" required>
-                            <div class="invalid-feedback">Por favor, selecione uma data.</div>
+                            <div v-if="form.errors.data_aprovacao" class="text-danger">{{ form.errors.data_aprovacao }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Rodovia</label>
@@ -149,7 +151,7 @@ const logout = () => {
                                 <option value="BR-407, BR-324 BA">23 - BR-407, BR-324 BA</option>
                                 <option value="BR-230 PI/CE">24 - BR-230 PI/CE</option>
                             </select>
-                            <div class="invalid-feedback">Por favor, selecione uma rodovia.</div>
+                            <div v-if="form.errors.rodovia" class="text-danger">{{ form.errors.rodovia }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Subproduto</label>
@@ -159,28 +161,32 @@ const logout = () => {
                                     {{ option.subproduto + ' - ' + option.descricao_revisada }}
                                 </option>
                             </select>
-                            <div class="invalid-feedback">Por favor, selecione um subproduto.</div>
+                            <div v-if="form.errors.subproduto" class="text-danger">{{ form.errors.subproduto }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Código SIAC</label>
                             <input type="text" v-model="form.cod_siac" class="form-control bg-light" readonly>
+                            <div v-if="form.errors.cod_siac" class="text-danger">{{ form.errors.cod_siac }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Unidade</label>
                             <input type="text" v-model="form.unidade" class="form-control bg-light" readonly>
+                            <div v-if="form.errors.unidade" class="text-danger">{{ form.errors.unidade }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Quantidade</label>
-                            <input type="number" v-model.number="form.quantidade" class="form-control" required>
-                            <div class="invalid-feedback">Por favor, insira uma quantidade válida.</div>
+                            <input type="number" v-model.number="form.quantidade" class="form-control">
+                            <div v-if="form.errors.quantidade" class="text-danger">{{ form.errors.quantidade }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">Quantidade Medida</label>
                             <input type="number" step="0.01" v-model.number="form.quantidade_medida" class="form-control">
+                            <div v-if="form.errors.quantidade_medida" class="text-danger">{{ form.errors.quantidade_medida }}</div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="form-label font-weight-semibold">SEI - Versão Aprovada</label>
-                            <input type="text" v-model="form.sei_versao_aprovada" class="form-control" placeholder="Digite o SEI da versão aprovada">
+                            <input type="text" v-model="form.sei_versao_aprovada" class="form-control" placeholder="Digite o SEI da versão aprovada" required>
+                            <div v-if="form.errors.sei_versao_aprovada" class="text-danger">{{ form.errors.sei_versao_aprovada }}</div>
                         </div>
                         <div class="d-flex justify-content-end">
                             <button type="submit" class="btn btn-primary mr-2" :disabled="form.processing">CADASTRAR</button>

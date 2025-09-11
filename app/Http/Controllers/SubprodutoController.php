@@ -40,15 +40,15 @@ class SubprodutoController extends Controller
             'sei_versao_aprovada' => 'nullable',
             'subproduto' => 'required',
             'cod_siac' => 'nullable',
-            'quantidade' => 'required|integer|min:1',
+            // 'quantidade' => 'required|integer|min:1',
             'unidade' => 'nullable',
-            'quantidade_medida' => 'nullable|numeric',
+            // 'quantidade_medida' => 'nullable|numeric',
         ]);
 
         $subprodutoData = Subproduto::where('subproduto', $request->subproduto)->first();
         $data = array_merge($request->all(), [
-            'id_subproduto' => $request->subproduto, // Mantém o valor de subproduto (ex.: "1.1.1")
-            'subproduto' => $subprodutoData->descricao_revisada ?? '', // Popula com descricao_revisada
+            'id_subproduto' => $request->subproduto, 
+            'subproduto' => $subprodutoData->descricao_revisada ?? '', 
             'cod_siac' => $subprodutoData->cod_siac ?? $request->cod_siac,
             'unidade' => $subprodutoData->unidade_de_medida ?? $request->unidade,
             'id_user' => auth()->id(),
@@ -89,9 +89,9 @@ class SubprodutoController extends Controller
             'sei_versao_aprovada' => 'nullable',
             'subproduto' => 'required',
             'cod_siac' => 'nullable',
-            'quantidade' => 'required|integer|min:1',
+            // 'quantidade' => 'required|integer|min:1',
             'unidade' => 'nullable',
-            'quantidade_medida' => 'nullable|numeric',
+            // 'quantidade_medida' => 'nullable|numeric',
         ]);
 
         $subprodutoData = Subproduto::where('subproduto', $request->subproduto)->first();

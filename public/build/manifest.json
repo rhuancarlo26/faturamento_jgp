@@ -1,100 +1,113 @@
 {
-  "_PrimaryButton-CPBHghfH.js": {
-    "file": "assets/PrimaryButton-CPBHghfH.js",
+  "_PrimaryButton-rFVmWqX8.js": {
+    "file": "assets/PrimaryButton-rFVmWqX8.js",
     "name": "PrimaryButton",
     "imports": [
       "resources/js/app.js",
-      "_TextInput-BaRI-WWT.js"
+      "_TextInput-Clb2O1Je.js"
     ]
   },
-  "_TextInput-BaRI-WWT.js": {
-    "file": "assets/TextInput-BaRI-WWT.js",
+  "_TextInput-Clb2O1Je.js": {
+    "file": "assets/TextInput-Clb2O1Je.js",
     "name": "TextInput",
     "imports": [
       "resources/js/app.js"
     ]
   },
-  "_index-C9HHl74C.js": {
-    "file": "assets/index-C9HHl74C.js",
+  "_index-Ds4mjRDd.js": {
+    "file": "assets/index-Ds4mjRDd.js",
     "name": "index",
     "imports": [
       "resources/js/app.js"
     ]
   },
   "resources/js/Pages/Profile/Edit.vue": {
-    "file": "assets/Edit-DPJZqNjt.js",
+    "file": "assets/Edit-CfMtUKqL.js",
     "name": "Edit",
     "src": "resources/js/Pages/Profile/Edit.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-BaRI-WWT.js",
+      "_TextInput-Clb2O1Je.js",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
       "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
       "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
-      "_PrimaryButton-CPBHghfH.js"
+      "_PrimaryButton-rFVmWqX8.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/DeleteUserForm.vue": {
-    "file": "assets/DeleteUserForm-IvA63c9K.js",
+    "file": "assets/DeleteUserForm-DEuMMoFb.js",
     "name": "DeleteUserForm",
     "src": "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-BaRI-WWT.js"
+      "_TextInput-Clb2O1Je.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue": {
-    "file": "assets/UpdatePasswordForm-yz4mJbZN.js",
+    "file": "assets/UpdatePasswordForm-DpGzOQ8j.js",
     "name": "UpdatePasswordForm",
     "src": "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-BaRI-WWT.js",
-      "_PrimaryButton-CPBHghfH.js"
+      "_TextInput-Clb2O1Je.js",
+      "_PrimaryButton-rFVmWqX8.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue": {
-    "file": "assets/UpdateProfileInformationForm-bWXNmDTZ.js",
+    "file": "assets/UpdateProfileInformationForm-DRWgpKXM.js",
     "name": "UpdateProfileInformationForm",
     "src": "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-BaRI-WWT.js",
-      "_PrimaryButton-CPBHghfH.js"
+      "_TextInput-Clb2O1Je.js",
+      "_PrimaryButton-rFVmWqX8.js"
     ]
   },
   "resources/js/Pages/Subprodutos/Create.vue": {
-    "file": "assets/Create-B-MMEwCx.js",
+    "file": "assets/Create-15Cj_HAc.js",
     "name": "Create",
     "src": "resources/js/Pages/Subprodutos/Create.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-C9HHl74C.js"
+      "_index-Ds4mjRDd.js"
+    ],
+    "css": [
+      "assets/Create-SsYe6lSH.css"
+    ]
+  },
+  "resources/js/Pages/Subprodutos/Edit.vue": {
+    "file": "assets/Edit-BH14xIoz.js",
+    "name": "Edit",
+    "src": "resources/js/Pages/Subprodutos/Edit.vue",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js",
+      "_index-Ds4mjRDd.js"
     ],
     "css": [
       "assets/Create-SsYe6lSH.css"
     ]
   },
   "resources/js/Pages/Subprodutos/Index.vue": {
-    "file": "assets/Index-BMK2HOJI.js",
+    "file": "assets/Index-K6LaTQQf.js",
     "name": "Index",
     "src": "resources/js/Pages/Subprodutos/Index.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-C9HHl74C.js"
+      "_index-Ds4mjRDd.js"
     ],
     "css": [
-      "assets/Create-SsYe6lSH.css"
+      "assets/Index-BMix1PCU.css"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BSpHz-Ss.js",
+    "file": "assets/app-BH_YfDU3.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
@@ -104,6 +117,7 @@
       "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
       "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
       "resources/js/Pages/Subprodutos/Create.vue",
+      "resources/js/Pages/Subprodutos/Edit.vue",
       "resources/js/Pages/Subprodutos/Index.vue"
     ]
   },
