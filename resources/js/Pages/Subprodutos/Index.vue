@@ -62,7 +62,8 @@ const downloadExcel = () => {
         Unidade: item.unidade,
         'Qtd. Medida': item.quantidade_medida,
         'SEI Versão Aprovada': item.sei_versao_aprovada,
-        'Parecer Técnico/Portaria/Ofício Aprovação - SEI': item.oficio_numero
+        'Parecer Técnico/Portaria/Ofício Aprovação - SEI': item.oficio_numero,
+        Data: item.data_aprovacao || '-'
     })));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Subprodutos');
@@ -121,7 +122,7 @@ onMounted(() => {
 
             <!-- Conteúdo principal -->
             <div class="flex-grow-1 p-4">
-                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1690px;">
+                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1890px;">
                     <h3 class="text-center mb-4 font-weight-bold" style="color: #4B5563; font-size: 1.3rem;">CONSULTAR SUBPRODUTOS APROVADOS</h3>
                     <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ flashSuccess }}
@@ -162,6 +163,7 @@ onMounted(() => {
                                     <th class="text-center align-middle">Qtd. Medida</th>
                                     <th class="text-center align-middle">SEI Versão Aprovada</th>
                                     <th class="text-center align-middle">Parecer Técnico/Portaria/Ofício Aprovação - SEI</th>
+                                    <th class="text-center align-middle">Data Aprovação</th>
                                     <th v-if="user" class="text-center align-middle">Ações</th>
                                 </tr>
                             </thead>
@@ -176,6 +178,7 @@ onMounted(() => {
                                     <td class="text-center align-middle">{{ subproduto.quantidade_medida || '-' }}</td>
                                     <td class="text-center align-middle">{{ subproduto.sei_versao_aprovada || '-' }}</td>
                                     <td class="text-center align-middle">{{ subproduto.oficio_numero || '-' }}</td>
+                                    <td class="text-center align-middle">{{ subproduto.data_aprovacao ? new Date(subproduto.data_aprovacao + 'T00:00:00').toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-' }}</td>
                                     <td v-if="user" class="text-center align-middle">
                                         <div class="d-flex justify-content-center align-items-center">
                                             <button class="btn btn-danger btn-sm mr-1" @click="deleteSubproduto(subproduto.id)">Excluir</button>
@@ -184,7 +187,7 @@ onMounted(() => {
                                     </td>
                                 </tr>
                                 <tr v-if="!subprodutos.length">
-                                    <td :colspan="user ? 10 : 9" class="text-center align-middle">Nenhum subproduto encontrado.</td>
+                                    <td :colspan="user ? 11 : 10" class="text-center align-middle">Nenhum subproduto encontrado.</td>
                                 </tr>
                             </tbody>
                         </table>

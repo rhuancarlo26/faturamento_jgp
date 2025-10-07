@@ -89,15 +89,13 @@ class SubprodutoController extends Controller
             'sei_versao_aprovada' => 'nullable',
             'subproduto' => 'required',
             'cod_siac' => 'nullable',
-            // 'quantidade' => 'required|integer|min:1',
             'unidade' => 'nullable',
-            // 'quantidade_medida' => 'nullable|numeric',
         ]);
 
         $subprodutoData = Subproduto::where('subproduto', $request->subproduto)->first();
         $data = array_merge($request->all(), [
-            'id_subproduto' => $request->subproduto, // Mantém o valor de subproduto
-            'subproduto' => $subprodutoData->descricao_revisada ?? $subproduto->subproduto, // Atualiza com descricao_revisada
+            'id_subproduto' => $request->subproduto,
+            'subproduto' => $subprodutoData->descricao_revisada ?? $subproduto->subproduto, 
             'cod_siac' => $subprodutoData->cod_siac ?? $request->cod_siac,
             'unidade' => $subprodutoData->unidade_de_medida ?? $request->unidade,
         ]);

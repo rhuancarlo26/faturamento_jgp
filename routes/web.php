@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\SubprodutoController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::get('/', [SubprodutoController::class, 'index'])->name('subprodutos.index');
 Route::get('/subprodutos', [SubprodutoController::class, 'index'])->name('subprodutos.index');
@@ -13,6 +14,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/subprodutos/{id}/edit', [SubprodutoController::class, 'edit'])->name('subprodutos.edit');
     Route::put('/subprodutos/{id}', [SubprodutoController::class, 'update'])->name('subprodutos.update');
 });
+
+Route::middleware('auth')->get('/oficios', function () {
+    return Inertia::render('Oficios/Index', [
+        'user' => auth()->user(),
+    ]);
+})->name('oficios.index');
 
 Auth::routes();
 
