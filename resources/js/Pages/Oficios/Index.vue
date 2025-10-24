@@ -1,6 +1,10 @@
 <script setup>
 import { useForm } from '@inertiajs/inertia-vue3';
-import { ref } from 'vue';
+import { ref, onMounted, defineProps, computed, watch } from 'vue';
+
+import PizZip from 'pizzip';
+import Docxtemplater from 'docxtemplater';
+import { saveAs } from 'file-saver';
 
 defineProps({
     user: Object,
@@ -8,8 +12,7 @@ defineProps({
 
 const form = useForm({
     rodovia: '',
-    data: '',
-    oficio_dnit: false,
+    data_oficio: new Date().toISOString().split('T')[0], 
     oficio_sede: false,
     modelo_oficio: '',
     assunto: '',
@@ -17,6 +20,14 @@ const form = useForm({
 });
 
 const flashSuccess = ref(null);
+
+const generateOficioNumero = computed(() => {
+    const ano = new Date().getFullYear();
+    const tipo = form.oficio_dnit ? '02' : form.oficio_sede ? '01' : '';
+    const sequencia = 154; 
+    const rodovia = form.rodovia ? form.rodovia.replace(/[\s/-]/g, '') : '';
+    return tipo ? `OF_JGP.${tipo}.${sequencia}/${ano}_${rodovia}` : '';
+});
 
 const submit = () => {
     form.post('/oficios', {
@@ -30,6 +41,72 @@ const submit = () => {
     });
 };
 
+const getLocalIsoDate = () => {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    const dia = String(hoje.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+};
+
+const formatarDataPorExtenso = (isoDate) => {
+    const meses = [
+        'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+        'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
+    ];
+    const partes = isoDate.split('-'); 
+    const ano = parseInt(partes[0]);
+    const mes = meses[parseInt(partes[1]) - 1];
+    const dia = parseInt(partes[2]);
+    return `${dia} de ${mes} de ${ano}`;
+};
+
+const gerarDocumento = async () => {
+    try {
+        const response = await fetch('/Modelo_Oficio_Placeholders.docx');
+        if (!response.ok) {
+            throw new Error('Não foi possível carregar o modelo .docx');
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const zip = new PizZip(arrayBuffer);
+
+        const doc = new Docxtemplater(zip, {
+            paragraphLoop: true,
+            linebreaks: true,
+            delimiters: { start: '[[', end: ']]' },
+        });
+
+        doc.setData({
+            assunto: form.assunto ?? '',
+            texto_oficio: (form.texto_oficio ?? '').replace(/\r\n|\r|\n/g, '\n'),
+            oficio_numero: generateOficioNumero.value ?? '',
+            data_oficio: formatarDataPorExtenso(form.data_oficio),
+        });
+
+        doc.render();
+
+        const out = doc.getZip().generate({
+            type: 'blob',
+            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        });
+
+        saveAs(out, `Oficio-${Date.now()}.docx`);
+    } catch (error) {
+        console.error('Erro ao gerar documento:', error);
+
+        if (error.properties && Array.isArray(error.properties.errors)) {
+            error.properties.errors.forEach((e, i) => {
+                console.error(`[Docxtemplater Error ${i + 1}] id: ${e.properties?.id}`);
+                console.error(`[Docxtemplater Error ${i + 1}] explanation: ${e.properties?.explanation}`);
+                console.error(`[Docxtemplater Error ${i + 1}] message: ${e.properties?.message}`);
+            });
+        }
+
+        alert('Erro ao gerar o documento. Verifique os placeholders no modelo.');
+    }
+};
+
 const logout = () => {
     form.post('/logout', {
         onSuccess: () => {
@@ -37,11 +114,25 @@ const logout = () => {
         },
     });
 };
+
+onMounted(() => {
+
+});
+
+watch(() => form.oficio_sede, (newValue) => {
+    if (newValue) {
+        form.oficio_dnit = false;
+    }
+});
+watch(() => form.oficio_dnit, (newValue) => {
+    if (newValue) {
+        form.oficio_sede = false;
+    }
+});
 </script>
 
 <template>
     <div class="min-vh-100 bg-light">
-        <!-- Barra superior -->
         <nav class="navbar navbar-dark" style="background-color: #3d85c6;">
             <div class="container-fluid d-flex align-items-center">
                 <img src="/images/logo.jpg" alt="Logo" style="height: 40px; margin-right: 10px;">
@@ -124,8 +215,8 @@ const logout = () => {
                                 </select>
                             </div>
                             <div class="form-group col-md-4 mb-3">
-                                <label for="data" class="form-label font-weight-semibold text-dark">Data</label>
-                                <input type="date" v-model="form.data" id="data" class="form-control">
+                                <label for="data_oficio" class="form-label font-weight-semibold text-dark">Data</label>
+                                <input type="date" v-model="form.data_oficio" id="data_oficio" class="form-control" readonly>
                             </div>
                         </div>
                         <div class="form-row align-items-center">
@@ -139,14 +230,11 @@ const logout = () => {
                                     <label for="oficioDnit" class="custom-control-label text-dark">Ofício DNIT</label>
                                 </div>
                             </div>
+                        </div>
+                        <div class="form-row align-items-center">
                             <div class="form-group col-md-6 mb-3">
-                                <label for="modeloOficio" class="form-label font-weight-semibold text-dark">Escolher Ofício Modelo</label>
-                                <select v-model="form.modelo_oficio" id="modeloOficio" class="form-control custom-select">
-                                    <option value="">Escolher Ofício Modelo</option>
-                                    <option value="modelo1">Modelo 1</option>
-                                    <option value="modelo2">Modelo 2</option>
-                                    <option value="modelo3">Modelo 3</option>
-                                </select>
+                                <label for="oficioNumero" class="form-label font-weight-semibold text-dark">Ofício nº</label>
+                                <input type="text" v-model="generateOficioNumero" id="oficioNumero" class="form-control" readonly>
                             </div>
                         </div>
                         <div class="form-row">
@@ -162,7 +250,9 @@ const logout = () => {
                             </div>
                         </div>
                         <div class="d-flex justify-content-end mb-4">
-                            <button type="button" class="btn btn-outline-primary mr-2">Visualizar Ofício</button>
+                            <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">
+                                Gerar Documento
+                            </button>
                             <button type="button" class="btn btn-danger mr-2" @click.prevent="form.reset()">Cancelar</button>
                             <button type="submit" class="btn btn-success">Salvar e Gerar PDF</button>
                         </div>
