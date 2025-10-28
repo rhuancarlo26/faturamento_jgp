@@ -117,6 +117,11 @@ onMounted(() => {
                             <i class="fas fa-plus-circle mr-2" style="color: #28A745;"></i> CADASTRAR SUBPRODUTOS
                         </a>
                     </li>
+                    <li class="nav-item active">
+                        <a class="nav-link text-uppercase font-weight-bold" style="color: #4B5563; font-size: 0.9rem;" href="/oficios-listar">
+                            <i class="fas fa-file-alt mr-2" style="color: #007BFF;"></i> OFÍCIOS
+                        </a>
+                    </li>
                 </ul>
             </div>
 

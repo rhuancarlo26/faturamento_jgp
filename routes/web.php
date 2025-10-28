@@ -1,9 +1,11 @@
 <?php
+
 use App\Http\Controllers\SubprodutoController;
 use App\Http\Controllers\OficiosController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
+
+// Home & Subprodutos
 Route::get('/', [SubprodutoController::class, 'index'])->name('subprodutos.index');
 Route::get('/subprodutos', [SubprodutoController::class, 'index'])->name('subprodutos.index');
 Route::get('/subprodutos/fetch/{subproduto}', [SubprodutoController::class, 'fetch'])->name('subprodutos.fetch');
@@ -16,18 +18,26 @@ Route::middleware('auth')->group(function () {
     Route::put('/subprodutos/{id}', [SubprodutoController::class, 'update'])->name('subprodutos.update');
 });
 
+
+// Ofícios
 Route::middleware('auth')->group(function () {
     Route::get('/oficios', [OficiosController::class, 'index'])->name('oficios.index');
     Route::post('/oficios', [OficiosController::class, 'store'])->name('oficios.store');
-    Route::get('/oficios/{id}', [OficiosController::class, 'show'])->name('oficios.show');
+
+    Route::get('/oficios/ultimo-contador', [OficiosController::class, 'ultimoContador'])->name('oficios.ultimo_contador');
+    Route::get('/oficios-listar', [OficiosController::class, 'listarView'])->name('oficios.listar.view');
     Route::get('/oficios-lista', [OficiosController::class, 'listar'])->name('oficios.listar');
+
+    Route::get('/oficios/{id}/download', [OficiosController::class, 'download'])
+        ->whereNumber('id')
+        ->name('oficios.download');
+
+    Route::get('/oficios/{id}', [OficiosController::class, 'show'])
+        ->whereNumber('id')
+        ->name('oficios.show');
+
+    Route::get('/oficios/pdf/{id}', [OficiosController::class, 'gerarPdf'])->name('oficios.pdf');
+
 });
 
-Route::middleware('auth')->get('/oficios', function () {
-    return Inertia::render('Oficios/Index', [
-        'user' => auth()->user(),
-    ]);
-})->name('oficios.index');
-
 Auth::routes();
-

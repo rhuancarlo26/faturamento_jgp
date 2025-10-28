@@ -12,11 +12,13 @@ class Oficio extends Model
     protected $table = 'registros_oficios';
 
     protected $fillable = [
+        'contador',
         'rodovia',
         'data_registro',
         'oficio_num',
         'assunto',
         'texto',
+        'meio',
         'autor',
     ];
 
