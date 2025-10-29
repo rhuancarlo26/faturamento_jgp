@@ -3,12 +3,14 @@ import { useForm } from '@inertiajs/inertia-vue3';
 import { ref, onMounted, defineProps, computed, watch, nextTick } from 'vue';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
+import { renderAsync } from 'docx-preview';
 import { saveAs } from 'file-saver';
-import { renderAsync } from 'docx-preview'; // 👈 adicionado
 
 defineProps({
   user: Object,
 });
+
+const doc = ref(null); // ← adicione isso no topo
 
 const form = useForm({
   rodovia: '',
@@ -22,7 +24,6 @@ const form = useForm({
   contador: null,
 });
 
-// 📌 Processos por BR
 const processosPorBR = {
   'BR-230/MA': '50600.010066/2018-54',
   'BR-437 CE/RN': '50600.003544/2020-94',
@@ -53,8 +54,6 @@ const oficiosSalvos = ref([]);
 const precisaContadorManual = ref(false);
 const mostrarModalContador = ref(false);
 const contadorManualTemp = ref(null);
-
-// 📌 Novo modal para visualizar DOCX
 const mostrarModalVisualizacao = ref(false);
 const docxContainer = ref(null);
 
@@ -64,7 +63,6 @@ const carregarProximoContador = async (ano) => {
     const res = await fetch(`/oficios/ultimo-contador?ano=${ano}`);
     if (!res.ok) throw new Error('Falha ao consultar contador');
     const data = await res.json();
-
     if (data.ultimo_contador === null || data.ultimo_contador === undefined) {
       precisaContadorManual.value = true;
       mostrarModalContador.value = true;
@@ -96,7 +94,7 @@ const generateOficioNumero = computed(() => {
   return tipo ? `OF_JGP.${tipo}.${seq}/${ano}${rodovia ? '_' + rodovia : ''}` : '';
 });
 
-// 📌 Gerar e visualizar DOCX (Word)
+// 📌 Gerar e visualizar DOCX
 const formatarDataPorExtenso = (isoDate) => {
   const meses = [
     'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
@@ -109,17 +107,18 @@ const formatarDataPorExtenso = (isoDate) => {
 const gerarDocumento = async () => {
   try {
     const response = await fetch('/Modelo_Oficio_Placeholders.docx');
-    if (!response.ok) throw new Error('Não foi possível carregar o modelo .docx');
+    if (!response.ok) throw new Error('Modelo não encontrado');
 
     const arrayBuffer = await response.arrayBuffer();
     const zip = new PizZip(arrayBuffer);
-    const doc = new Docxtemplater(zip, {
+    
+    doc.value = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
       delimiters: { start: '[[', end: ']]' },
     });
 
-    doc.setData({
+    doc.value.setData({
       assunto: form.assunto ?? '',
       texto_oficio: (form.texto_oficio ?? '').replace(/\r\n|\r|\n/g, '\n'),
       oficio_numero: generateOficioNumero.value ?? '',
@@ -127,9 +126,9 @@ const gerarDocumento = async () => {
       processo_sei: processoSEI.value ?? ''
     });
 
-    doc.render();
+    doc.value.render();
 
-    const out = doc.getZip().generate({
+    const out = doc.value.getZip().generate({
       type: 'blob',
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
@@ -140,15 +139,29 @@ const gerarDocumento = async () => {
       docxContainer.value.innerHTML = '';
       renderAsync(out, docxContainer.value, null, { className: 'docx' });
     }
-
   } catch (error) {
-    console.error('Erro ao gerar documento:', error);
-    alert('Erro ao gerar o documento. Verifique o modelo.');
+    console.error('Erro:', error);
+    alert('Erro ao gerar documento.');
   }
 };
 
-// 📌 Salvar no banco e redirecionar
-const submit = () => {
+const baixarDocumento = () => {
+  if (!doc.value) {
+    alert('Gere o documento primeiro!');
+    return;
+  }
+
+  const out = doc.value.getZip().generate({
+    type: 'blob',
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
+
+  const nomeArquivo = `Oficio_${generateOficioNumero.value || 'sem_numero'}.docx`;
+  saveAs(out, nomeArquivo);
+};
+
+// 📌 Salvar no banco (agora no modal)
+const salvarOficio = () => {
   form.oficio_num = generateOficioNumero.value;
   form.post('/oficios', {
     onSuccess: () => {
@@ -189,7 +202,6 @@ onMounted(() => {
   carregarProximoContador(new Date(form.data_oficio).getFullYear());
 });
 
-// 📌 Watchers
 watch(() => form.oficio_sede, (v) => { if (v) form.oficio_dnit = false; });
 watch(() => form.oficio_dnit, (v) => { if (v) form.oficio_sede = false; });
 watch(() => form.data_oficio, (newVal, oldVal) => {
@@ -346,15 +358,13 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
             </div>
 
             <div class="d-flex justify-content-end mb-4">
-                <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">
-                    Visualizar Ofício (Word)
-                </button>
                 <button type="button" class="btn btn-danger mr-2" @click.prevent="form.reset()">
                     Cancelar
                 </button>
-                <button type="submit" class="btn btn-success">
-                    Salvar e Gerar PDF
+                <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">
+                    Avançar para Visualização
                 </button>
+
             </div>
 
           </form>
@@ -363,13 +373,13 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
     </div>
 
 
-<div 
+  <div 
       class="modal fade" 
       :class="{ show: mostrarModalContador }" 
       v-show="mostrarModalContador"
       style="z-index: 1050; display: block;"
       aria-modal="true" role="dialog"
-  >
+    >
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content shadow">
         <div class="modal-header bg-primary text-white">
@@ -393,28 +403,32 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
 
   <!-- 🔹 Novo modal de visualização -->
   <div 
-    class="modal fade" 
-    :class="{ show: mostrarModalVisualizacao }" 
-    v-show="mostrarModalVisualizacao"
-    style="z-index:1060; display:block;"
-    aria-modal="true" role="dialog"
-  >
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-      <div class="modal-content shadow-lg">
-        <div class="modal-header bg-primary text-white">
-          <h5 class="modal-title">Visualizar Ofício (Word)</h5>
-          <button type="button" class="close text-white" @click="mostrarModalVisualizacao = false">&times;</button>
-        </div>
-        <div class="modal-body" style="height:80vh; overflow:auto;">
-          <div ref="docxContainer" class="p-3 bg-white rounded shadow-sm"></div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn btn-secondary" @click="mostrarModalVisualizacao = false">Fechar</button>
+      class="modal fade" 
+      :class="{ show: mostrarModalVisualizacao }" 
+      v-show="mostrarModalVisualizacao"
+      style="z-index:1060; display:block;"
+      aria-modal="true" role="dialog"
+    >
+      <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content shadow-lg">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">Visualizar Ofício</h5>
+            <button type="button" class="close text-white" @click="mostrarModalVisualizacao = false">&times;</button>
+          </div>
+          <div class="modal-body" style="height:80vh; overflow:auto;">
+            <div ref="docxContainer" class="p-3 bg-white rounded shadow-sm"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary" @click="mostrarModalVisualizacao = false">Voltar</button>
+            <button class="btn btn-success" @click="salvarOficio">Salvar Ofício</button>
+            <!-- <button class="btn btn-primary mr-2" @click="baixarDocumento">
+              Baixar DOCX
+            </button> -->
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="modal-backdrop fade show" v-show="mostrarModalVisualizacao" style="z-index:1055;"></div>
+    <div class="modal-backdrop fade show" v-show="mostrarModalVisualizacao" style="z-index:1055;"></div>
 
   </div>
 </template>
