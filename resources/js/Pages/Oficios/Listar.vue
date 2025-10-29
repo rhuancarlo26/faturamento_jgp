@@ -11,7 +11,7 @@ const filtroRodovia = ref('');
 const carregando = ref(false);
 const flashSuccess = ref(null);
 
-// 📌 Função para carregar os ofícios
+// 📌 Carregar ofícios com ou sem filtro
 const carregarOficios = async () => {
     try {
         carregando.value = true;
@@ -29,19 +29,19 @@ const carregarOficios = async () => {
     }
 };
 
-// 📌 Carregar ao montar
+// 📌 Carrega ao montar
 onMounted(() => {
     carregarOficios();
 });
 
-// 📌 Atualiza lista ao mudar filtro
+// 📌 Atualiza ao mudar filtro
 watch(filtroRodovia, () => {
     carregarOficios();
 });
 
-// 📌 Redirecionar para detalhes/edição
-const abrirOficio = (id) => {
-    Inertia.visit(`/oficios/${id}`);
+// 📌 Redirecionar para formulário de novo ofício
+const novoOficio = () => {
+    Inertia.visit('/oficios');
 };
 
 // 📌 Logout
@@ -114,9 +114,9 @@ const logout = () => {
                 <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1600px;">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="font-weight-bold text-dark m-0">📄 Ofícios Cadastrados</h3>
-                        <a href="/oficios" class="btn btn-primary">
+                        <button class="btn btn-primary" @click="novoOficio">
                             <i class="fas fa-plus mr-2"></i> Novo Ofício
-                        </a>
+                        </button>
                     </div>
 
                     <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -160,12 +160,14 @@ const logout = () => {
                         </div>
                     </div>
 
+                    <!-- Loader -->
                     <div v-if="carregando" class="text-center py-4">
                         <div class="spinner-border text-primary" role="status">
                             <span class="sr-only">Carregando...</span>
                         </div>
                     </div>
 
+                    <!-- Tabela -->
                     <div v-else>
                         <table class="table table-bordered table-hover">
                             <thead class="thead-light">
@@ -175,6 +177,7 @@ const logout = () => {
                                     <th>Rodovia</th>
                                     <th>Assunto</th>
                                     <th>Data</th>
+                                    <th style="width: 120px;">Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -187,6 +190,15 @@ const logout = () => {
                                     <td>{{ oficio.rodovia }}</td>
                                     <td>{{ oficio.assunto }}</td>
                                     <td>{{ new Date(oficio.data_registro).toLocaleDateString('pt-BR') }}</td>
+                                    <td class="text-center">
+                                        <a
+                                            :href="`/oficios/pdf/${oficio.id}`"
+                                            class="btn btn-sm btn-outline-danger"
+                                            title="Baixar PDF"
+                                        >
+                                            <i class="fas fa-file-pdf"></i>
+                                        </a>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
@@ -215,5 +227,15 @@ thead.thead-light th {
     appearance: none;
     background-position: right 0.75rem center;
     background-size: 16px 12px;
+}
+
+.btn-outline-danger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-outline-danger i {
+    font-size: 1rem;
 }
 </style>

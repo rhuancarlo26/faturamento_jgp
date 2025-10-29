@@ -1,10 +1,10 @@
 <script setup>
 import { useForm } from '@inertiajs/inertia-vue3';
-import { ref, onMounted, defineProps, computed, watch } from 'vue';
-
+import { ref, onMounted, defineProps, computed, watch, nextTick } from 'vue';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver';
+import { renderAsync } from 'docx-preview'; // 👈 adicionado
 
 defineProps({
   user: Object,
@@ -22,6 +22,7 @@ const form = useForm({
   contador: null,
 });
 
+// 📌 Processos por BR
 const processosPorBR = {
   'BR-230/MA': '50600.010066/2018-54',
   'BR-437 CE/RN': '50600.003544/2020-94',
@@ -45,10 +46,7 @@ const processosPorBR = {
   'BR-222/CE': '50600.034578/2024-54'
 };
 
-const processoSEI = computed(() => {
-  return processosPorBR[form.rodovia] || '';
-});
-
+const processoSEI = computed(() => processosPorBR[form.rodovia] || '');
 
 const flashSuccess = ref(null);
 const oficiosSalvos = ref([]);
@@ -56,7 +54,11 @@ const precisaContadorManual = ref(false);
 const mostrarModalContador = ref(false);
 const contadorManualTemp = ref(null);
 
-// 🔹 Busca último contador do ano (ou marca que é o 1º do ano)
+// 📌 Novo modal para visualizar DOCX
+const mostrarModalVisualizacao = ref(false);
+const docxContainer = ref(null);
+
+// 📌 Contador sequencial
 const carregarProximoContador = async (ano) => {
   try {
     const res = await fetch(`/oficios/ultimo-contador?ano=${ano}`);
@@ -79,14 +81,13 @@ const carregarProximoContador = async (ano) => {
   }
 };
 
-// 🔸 Confirma número digitado no modal
 const confirmarContadorManual = () => {
   if (!contadorManualTemp.value || contadorManualTemp.value < 1) return;
   form.contador = Number(contadorManualTemp.value);
   mostrarModalContador.value = false;
 };
 
-// 🔹 Computa o número do ofício com base no contador
+// 📌 Número de ofício automático
 const generateOficioNumero = computed(() => {
   const ano = new Date(form.data_oficio).getFullYear();
   const tipo = form.oficio_dnit ? '02' : form.oficio_sede ? '01' : '';
@@ -95,20 +96,16 @@ const generateOficioNumero = computed(() => {
   return tipo ? `OF_JGP.${tipo}.${seq}/${ano}${rodovia ? '_' + rodovia : ''}` : '';
 });
 
-// 🔹 Formata data por extenso (para o DOCX)
+// 📌 Gerar e visualizar DOCX (Word)
 const formatarDataPorExtenso = (isoDate) => {
   const meses = [
     'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
     'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'
   ];
   const [yyyy, mm, dd] = isoDate.split('-');
-  const ano = parseInt(yyyy, 10);
-  const mes = meses[parseInt(mm, 10) - 1];
-  const dia = parseInt(dd, 10);
-  return `${dia} de ${mes} de ${ano}`;
+  return `${parseInt(dd)} de ${meses[parseInt(mm) - 1]} de ${yyyy}`;
 };
 
-// 🔹 Gerar DOCX
 const gerarDocumento = async () => {
   try {
     const response = await fetch('/Modelo_Oficio_Placeholders.docx');
@@ -137,42 +134,25 @@ const gerarDocumento = async () => {
       mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
 
-    saveAs(out, `Oficio-${Date.now()}.docx`);
+    mostrarModalVisualizacao.value = true;
+    await nextTick();
+    if (docxContainer.value) {
+      docxContainer.value.innerHTML = '';
+      renderAsync(out, docxContainer.value, null, { className: 'docx' });
+    }
+
   } catch (error) {
     console.error('Erro ao gerar documento:', error);
-    alert('Erro ao gerar o documento. Verifique os placeholders no modelo.');
+    alert('Erro ao gerar o documento. Verifique o modelo.');
   }
 };
 
-// 🔹 Salvar (envia contador)
+// 📌 Salvar no banco e redirecionar
 const submit = () => {
   form.oficio_num = generateOficioNumero.value;
-
   form.post('/oficios', {
-    onSuccess: async (page) => {
-      const oficioId = page.props.oficio_id ?? null;
-      flashSuccess.value = page.props.flash?.success || 'Ofício salvo!';
-
-      if (oficioId) {
-        try {
-          const response = await fetch(`/oficios/pdf/${oficioId}`);
-          if (!response.ok) throw new Error('Erro ao gerar PDF');
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `Oficio-${oficioId}.pdf`;
-          a.click();
-          window.URL.revokeObjectURL(url);
-        } catch (err) {
-          console.error(err);
-          alert('Ofício salvo, mas houve erro ao gerar PDF.');
-        }
-      }
-
-      form.reset();
-      carregarOficiosSalvos();
-      carregarProximoContador(new Date().getFullYear());
+    onSuccess: () => {
+      window.location.href = '/oficios-listar';
     },
     onError: (errors) => {
       console.log('Erros de validação:', errors);
@@ -180,7 +160,7 @@ const submit = () => {
   });
 };
 
-
+// 📌 Ofícios modelo
 const carregarOficiosSalvos = async () => {
   try {
     const response = await fetch('/oficios-lista');
@@ -206,20 +186,17 @@ const preencherOficio = async (id) => {
 
 onMounted(() => {
   carregarOficiosSalvos();
-  const ano = new Date(form.data_oficio).getFullYear();
-  carregarProximoContador(ano);
+  carregarProximoContador(new Date(form.data_oficio).getFullYear());
 });
 
+// 📌 Watchers
 watch(() => form.oficio_sede, (v) => { if (v) form.oficio_dnit = false; });
 watch(() => form.oficio_dnit, (v) => { if (v) form.oficio_sede = false; });
-
 watch(() => form.data_oficio, (newVal, oldVal) => {
   if (!newVal) return;
   const yNew = new Date(newVal).getFullYear();
   const yOld = oldVal ? new Date(oldVal).getFullYear() : yNew;
-  if (yNew !== yOld) {
-    carregarProximoContador(yNew);
-  }
+  if (yNew !== yOld) carregarProximoContador(yNew);
 });
 </script>
 
@@ -368,11 +345,6 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
               </div>
             </div>
 
-            <!-- <div class="d-flex justify-content-end mb-4">
-              <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">Gerar Documento</button>
-              <button type="button" class="btn btn-danger mr-2" @click.prevent="form.reset()">Cancelar</button>
-              <button type="submit" class="btn btn-success">Salvar</button>
-            </div> -->
             <div class="d-flex justify-content-end mb-4">
                 <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">
                     Visualizar Ofício (Word)
@@ -391,37 +363,58 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
     </div>
 
 
-    <div 
-        class="modal fade" 
-        :class="{ show: mostrarModalContador }" 
-        v-show="mostrarModalContador"
-        style="z-index: 1050; display: block;"
-        aria-modal="true" role="dialog"
-        >
+<div 
+      class="modal fade" 
+      :class="{ show: mostrarModalContador }" 
+      v-show="mostrarModalContador"
+      style="z-index: 1050; display: block;"
+      aria-modal="true" role="dialog"
+  >
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content shadow">
+      <div class="modal-content shadow">
         <div class="modal-header bg-primary text-white">
-            <h5 class="modal-title">Número inicial da sequência</h5>
+          <h5 class="modal-title">Número inicial da sequência</h5>
         </div>
         <div class="modal-body">
-            <p class="text-dark mb-3">
+          <p class="text-dark mb-3">
             Este é o primeiro ofício gerado neste ano.
             Informe o número inicial da sequência. Os demais serão gerados automaticamente.
-            </p>
-            <input type="number" v-model.number="contadorManualTemp" min="1" class="form-control" placeholder="Ex: 1 ou 221" />
+          </p>
+          <input type="number" v-model.number="contadorManualTemp" min="1" class="form-control" placeholder="Ex: 1 ou 221" />
         </div>
         <div class="modal-footer">
-            <button class="btn btn-secondary" @click="mostrarModalContador = false">Cancelar</button>
-            <button class="btn btn-primary" @click="confirmarContadorManual">Confirmar</button>
+          <button class="btn btn-secondary" @click="mostrarModalContador = false">Cancelar</button>
+          <button class="btn btn-primary" @click="confirmarContadorManual">Confirmar</button>
         </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-show="mostrarModalContador" style="z-index: 1040;"></div>
+
+  <!-- 🔹 Novo modal de visualização -->
+  <div 
+    class="modal fade" 
+    :class="{ show: mostrarModalVisualizacao }" 
+    v-show="mostrarModalVisualizacao"
+    style="z-index:1060; display:block;"
+    aria-modal="true" role="dialog"
+  >
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Visualizar Ofício (Word)</h5>
+          <button type="button" class="close text-white" @click="mostrarModalVisualizacao = false">&times;</button>
         </div>
+        <div class="modal-body" style="height:80vh; overflow:auto;">
+          <div ref="docxContainer" class="p-3 bg-white rounded shadow-sm"></div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="mostrarModalVisualizacao = false">Fechar</button>
+        </div>
+      </div>
     </div>
-    </div>
-    <div 
-        class="modal-backdrop fade show" 
-        v-show="mostrarModalContador" 
-        style="z-index: 1040;">
-    </div>
+  </div>
+  <div class="modal-backdrop fade show" v-show="mostrarModalVisualizacao" style="z-index:1055;"></div>
 
   </div>
 </template>
@@ -431,44 +424,44 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
 @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
 
 .custom-select {
-    appearance: none;
-    background-position: right 0.75rem center;
-    background-size: 16px 12px;
+  appearance: none;
+  background-position: right 0.75rem center;
+  background-size: 16px 12px;
 }
 
 .custom-control-input:checked ~ .custom-control-label::before {
-    background-color: #007bff;
-    border-color: #007bff;
+  background-color: #007bff;
+  border-color: #007bff;
 }
 
 .custom-control-label::before {
-    border: 1px solid #ced4da;
-    background-color: #fff;
+  border: 1px solid #ced4da;
+  background-color: #fff;
 }
 
 .custom-control-label {
-    margin-left: 0.5rem;
-    color: #4B5563;
+  margin-left: 0.5rem;
+  color: #4B5563;
 }
 
 .form-row {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
 .form-group {
-    margin-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .btn {
-    min-width: 120px;
-    text-align: center;
+  min-width: 120px;
+  text-align: center;
 }
 
 .modal {
   overflow: auto;
 }
-.modal-backdrop {
-  background-color: rgba(0, 0, 0, 0.4); 
-}
 
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.4);
+}
 </style>

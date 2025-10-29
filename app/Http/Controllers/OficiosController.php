@@ -4,13 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Oficio;
 use App\Models\RegistrosOficio;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class OficiosController extends Controller
 {
+    /**
+     * Página de cadastro de novo ofício
+     */
     public function index()
     {
         return inertia('Oficios/Index', [
@@ -18,20 +20,26 @@ class OficiosController extends Controller
         ]);
     }
 
+    /**
+     * Retorna o último número de contador do ano informado
+     */
     public function ultimoContador(Request $request)
     {
         $ano = (int) ($request->input('ano') ?: now()->year);
 
         $ultimo = DB::table('registros_oficios')
             ->whereYear('data_registro', $ano)
-            ->max('contador'); 
+            ->max('contador');
 
         return response()->json([
             'ano' => $ano,
-            'ultimo_contador' => $ultimo, 
+            'ultimo_contador' => $ultimo,
         ]);
     }
 
+    /**
+     * Armazena um novo ofício
+     */
     public function store(Request $request)
     {
         $request->validate([
@@ -46,10 +54,12 @@ class OficiosController extends Controller
 
         $ano = Carbon::parse($request->data_oficio)->year;
 
+        // 🔸 Verifica último contador do ano
         $ultimo = DB::table('registros_oficios')
             ->whereYear('data_registro', $ano)
             ->max('contador');
 
+        // 🔸 Se for o primeiro ofício do ano, obriga a informar contador manual
         if (is_null($ultimo)) {
             $request->validate([
                 'contador' => 'required|integer|min:1',
@@ -59,14 +69,16 @@ class OficiosController extends Controller
             $contador = $ultimo + 1;
         }
 
-        $tipo = $request->boolean('oficio_dnit') ? '02' : ($request->boolean('oficio_sede') ? '01' : '');
-        $rodoviaSan = $request->rodovia ? preg_replace('/[\s\/-]+/', '', $request->rodovia) : '';
+        $tipo = $this->resolverTipo(
+            $request->boolean('oficio_dnit'),
+            $request->boolean('oficio_sede')
+        );
 
-        $oficio_num = $tipo
-            ? "OF_JGP.{$tipo}.{$contador}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '')
-            : ($request->oficio_num ?? "OF_JGP.__.{$contador}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : ''));
+        $rodoviaSan = $this->sanitizarRodovia($request->rodovia);
 
-        $id = DB::table('registros_oficios')->insertGetId([
+        $oficio_num = $this->montarNumeroOficio($tipo, $contador, $ano, $rodoviaSan);
+
+        DB::table('registros_oficios')->insertGetId([
             'rodovia'        => $request->rodovia,
             'data_registro'  => Carbon::parse($request->data_oficio)->startOfDay(),
             'oficio_num'     => $oficio_num,
@@ -79,13 +91,13 @@ class OficiosController extends Controller
         ]);
 
         return redirect()
-            ->route('oficios.index')
-            ->with('success', 'Ofício registrado com sucesso!')
-            ->with('oficio_id', $id);
-
+            ->route('oficios.listar.view')
+            ->with('success', 'Ofício registrado com sucesso!');
     }
 
-
+    /**
+     * Lista os ofícios via JSON (para DataTable ou fetch)
+     */
     public function listar(Request $request)
     {
         $query = RegistrosOficio::query();
@@ -99,6 +111,9 @@ class OficiosController extends Controller
         return response()->json($oficios);
     }
 
+    /**
+     * Retorna um ofício específico
+     */
     public function show($id)
     {
         $oficio = DB::table('registros_oficios')->where('id', $id)->first();
@@ -110,6 +125,9 @@ class OficiosController extends Controller
         return response()->json($oficio);
     }
 
+    /**
+     * Página de listagem
+     */
     public function listarView()
     {
         return inertia('Oficios/Listar', [
@@ -117,26 +135,9 @@ class OficiosController extends Controller
         ]);
     }
 
-    private function resolverTipo(bool $dnit, bool $sede): string
-    {
-        if ($dnit) return '02';
-        if ($sede) return '01';
-        return '';
-    }
-
-    private function sanitizarRodovia(string $rodovia): string
-    {
-        return preg_replace('/[\s\/-]/', '', $rodovia);
-    }
-
-    private function montarNumeroOficio(string $tipo, int $sequencia, int $ano, string $rodoviaSan): string
-    {
-        if ($tipo === '') {
-            return "OF_JGP..{$sequencia}/{$ano}_{$rodoviaSan}";
-        }
-        return "OF_JGP.{$tipo}.{$sequencia}/{$ano}_{$rodoviaSan}";
-    }
-
+    /**
+     * Gera e baixa o PDF do ofício
+     */
     public function gerarPdf($id)
     {
         $oficio = DB::table('registros_oficios')->where('id', $id)->first();
@@ -152,7 +153,32 @@ class OficiosController extends Controller
             'data_oficio'  => Carbon::parse($oficio->data_registro)->translatedFormat('d \d\e F \d\e Y'),
         ];
 
-        $pdf = Pdf::loadView('pdf.oficio', $data);
+        $pdf = Pdf::loadView('oficio', $data);
         return $pdf->download("Oficio-{$oficio->id}.pdf");
+    }
+
+    /**
+     * -------------------------------
+     * Métodos auxiliares
+     * -------------------------------
+     */
+    private function resolverTipo(bool $dnit, bool $sede): string
+    {
+        if ($dnit) return '02';
+        if ($sede) return '01';
+        return '';
+    }
+
+    private function sanitizarRodovia(string $rodovia): string
+    {
+        return preg_replace('/[\s\/-]+/', '', $rodovia);
+    }
+
+    private function montarNumeroOficio(string $tipo, int $sequencia, int $ano, string $rodoviaSan): string
+    {
+        if ($tipo === '') {
+            return "OF_JGP.__.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
+        }
+        return "OF_JGP.{$tipo}.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
     }
 }
