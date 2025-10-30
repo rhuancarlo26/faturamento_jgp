@@ -1,6 +1,7 @@
 <script setup>
 import { useForm } from '@inertiajs/inertia-vue3';
 import { ref, onMounted, defineProps } from 'vue';
+import { computed } from 'vue';
 
 // Definir props explicitamente
 const props = defineProps({
@@ -81,6 +82,15 @@ onMounted(() => {
         document.head.appendChild(script);
     }
 });
+
+const subprodutosOrdenados = computed(() => {
+    return [...props.subprodutos].sort((a, b) => {
+        const dataA = new Date(a.data_aprovacao || 0);
+        const dataB = new Date(b.data_aprovacao || 0);
+        return dataB - dataA; 
+    });
+});
+
 </script>
 
 <template>
@@ -173,7 +183,7 @@ onMounted(() => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="subproduto in subprodutos" :key="subproduto.id">
+                                <tr v-for="subproduto in subprodutosOrdenados" :key="subproduto.id">
                                     <td class="text-center align-middle">{{ subproduto.rodovia }}</td>
                                     <td class="text-center align-middle">{{ subproduto.id_subproduto || '-' }}</td>
                                     <td class="text-center align-middle">{{ subproduto.cod_siac || '-' }}</td>
