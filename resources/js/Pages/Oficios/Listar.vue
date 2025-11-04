@@ -200,7 +200,19 @@ const logout = () => {
                                 <option value="BR-104 RN">BR-104 RN</option>
                                 <option value="BR-030 BA">BR-030 BA</option>
                                 <option value="BR-122 BA">BR-122 BA</option>
+                                <option value="BR-316 PI (km 33,54 ao km 55,60)">BR-316 PI (km 33,54 ao km 55,60)</option>
+                                <option value="BR-110/316/PE">BR-110/316/PE</option>
+                                <option value="BR-349/SE/AL">BR-349/SE/AL</option>
+                                <option value="BR-135/BA">BR-135/BA</option>
+                                <option value="BR-324/BA">BR-324/BA</option>
+                                <option value="BR-316/MA">BR-316/MA</option>
+                                <option value="BR-226/CE">BR-226/CE</option>
+                                <option value="BR-010/MA">BR-010/MA</option>
+                                <option value="BR-104/AL">BR-104/AL</option>
+                                <option value="BR-222/CE">BR-222/CE</option>
+                                <option value="BR-423, BR-424, BR-316 PE/AL">BR-423, BR-424, BR-316 PE/AL</option>
                                 <option value="BR-232 PE">BR-232 PE</option>
+                                <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
                                 <option value="BR-230 PI/CE">BR-230 PI/CE</option>
                             </select>
                         </div>
