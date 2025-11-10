@@ -25,6 +25,7 @@ const form = useForm({
 });
 
 const processosPorBR = {
+  'CT-94-2022': '50600.011613/2022-03',
   'BR-230/MA': '50600.010066/2018-54',
   'BR-437 CE/RN': '50600.003544/2020-94',
   'BR-402 MA/PI': '50600.029435/2022-69',
@@ -90,9 +91,22 @@ const generateOficioNumero = computed(() => {
   const ano = new Date(form.data_oficio).getFullYear();
   const tipo = form.oficio_dnit ? '02' : form.oficio_sede ? '01' : '';
   const seq = form.contador ? String(form.contador) : '__';
-  const rodovia = form.rodovia ? form.rodovia.replace(/[\s\/-]/g, '') : '';
-  return tipo ? `OF_JGP.${tipo}.${seq}/${ano}${rodovia ? '_' + rodovia : ''}` : '';
+
+  // ⚡ EXCEÇÃO → CT-94-2022 formatação especial
+  if (form.rodovia === 'CT-94-2022') {
+    return tipo
+      ? `OF_JGP.${tipo}.${seq}/${ano}-CT-94-2022`
+      : `OF_JGP.__.${seq}/${ano}-CT-94-2022`;
+  }
+
+  // Rodovias normais → sanitiza
+  const rodoviaSan = form.rodovia ? form.rodovia.replace(/[\s\/-]/g, '') : '';
+
+  return tipo
+    ? `OF_JGP.${tipo}.${seq}/${ano}${rodoviaSan ? '_' + rodoviaSan : ''}`
+    : '';
 });
+
 
 // 📌 Gerar e visualizar DOCX
 const formatarDataPorExtenso = (isoDate) => {
@@ -271,6 +285,7 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
                 <label for="rodovia" class="form-label font-weight-semibold text-dark">Rodovia</label>
                 <select v-model="form.rodovia" id="rodovia" class="form-control custom-select">
                   <option value="">Escolher rodovia</option>
+                  <option value="CT-94-2022">CT-94-2022</option>
                   <option value="BR-230/MA">BR-230/MA</option>
                   <option value="BR-437 CE/RN">BR-437 CE/RN</option>
                   <option value="BR-402 MA/PI">BR-402 MA/PI</option>

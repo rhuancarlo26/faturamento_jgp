@@ -54,6 +54,7 @@ const baixarOficio = async (oficio) => {
         }).replace(/ de /g, ' de ');
 
         const processoSEI = {
+            'CT-94-2022': '50600.011613/2022-03',
             'BR-230/MA': '50600.010066/2018-54',
             'BR-437 CE/RN': '50600.003544/2020-94',
             'BR-402 MA/PI': '50600.029435/2022-69',
@@ -190,6 +191,7 @@ const logout = () => {
                             <label for="filtroRodovia" class="font-weight-semibold text-dark">Filtrar por BR</label>
                             <select v-model="filtroRodovia" id="filtroRodovia" class="form-control custom-select">
                                 <option value="">Todas as rodovias</option>
+                                <option value="CT-94-2022">CT-94-2022</option>
                                 <option value="BR-230/MA">BR-230/MA</option>
                                 <option value="BR-437 CE/RN">BR-437 CE/RN</option>
                                 <option value="BR-402 MA/PI">BR-402 MA/PI</option>
@@ -235,6 +237,7 @@ const logout = () => {
                                     <th>Rodovia</th>
                                     <th>Assunto</th>
                                     <th>Data</th>
+                                    <th>Autor</th>
                                     <th style="width: 120px;">Ações</th>
                                 </tr>
                             </thead>
@@ -248,6 +251,7 @@ const logout = () => {
                                     <td>{{ oficio.rodovia }}</td>
                                     <td>{{ oficio.assunto }}</td>
                                     <td>{{ new Date(oficio.data_registro).toLocaleDateString('pt-BR') }}</td>
+                                    <td>{{ oficio.autor_nome }}</td>
                                     <td class="text-center">
                                         <button 
                                             @click="baixarOficio(oficio)" 
