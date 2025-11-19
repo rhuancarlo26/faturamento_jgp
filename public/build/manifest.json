@@ -1,160 +1,160 @@
 {
-  "_FileSaver.min-BVpoBxeZ.js": {
-    "file": "assets/FileSaver.min-BVpoBxeZ.js",
+  "_FileSaver.min-BryFcQnb.js": {
+    "file": "assets/FileSaver.min-BryFcQnb.js",
     "name": "FileSaver.min",
     "imports": [
       "resources/js/app.js"
     ]
   },
-  "_PrimaryButton-BNNxo9MH.js": {
-    "file": "assets/PrimaryButton-BNNxo9MH.js",
+  "_PrimaryButton-Bsne-TNP.js": {
+    "file": "assets/PrimaryButton-Bsne-TNP.js",
     "name": "PrimaryButton",
     "imports": [
       "resources/js/app.js",
-      "_TextInput-SDWvGAX_.js"
+      "_TextInput-CphuW0L2.js"
     ]
   },
-  "_TextInput-SDWvGAX_.js": {
-    "file": "assets/TextInput-SDWvGAX_.js",
+  "_TextInput-CphuW0L2.js": {
+    "file": "assets/TextInput-CphuW0L2.js",
     "name": "TextInput",
     "imports": [
       "resources/js/app.js"
     ]
   },
-  "_index-BP2TU4Ic.js": {
-    "file": "assets/index-BP2TU4Ic.js",
+  "_index-9naK6wBv.js": {
+    "file": "assets/index-9naK6wBv.js",
+    "name": "index",
+    "imports": [
+      "resources/js/app.js",
+      "_index-D_U5kmfF.js"
+    ]
+  },
+  "_index-D_U5kmfF.js": {
+    "file": "assets/index-D_U5kmfF.js",
     "name": "index",
     "imports": [
       "resources/js/app.js"
     ]
   },
-  "_index-CmbZHeNN.js": {
-    "file": "assets/index-CmbZHeNN.js",
-    "name": "index",
-    "imports": [
-      "resources/js/app.js",
-      "_index-BP2TU4Ic.js"
-    ]
-  },
   "resources/js/Pages/Oficios/Index.vue": {
-    "file": "assets/Index-g5Ux5mge.js",
+    "file": "assets/Index-DogLRP1Y.js",
     "name": "Index",
     "src": "resources/js/Pages/Oficios/Index.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-CmbZHeNN.js",
-      "_FileSaver.min-BVpoBxeZ.js",
-      "_index-BP2TU4Ic.js"
+      "_index-9naK6wBv.js",
+      "_FileSaver.min-BryFcQnb.js",
+      "_index-D_U5kmfF.js"
     ],
     "css": [
       "assets/Index-DLYkJPWh.css"
     ]
   },
   "resources/js/Pages/Oficios/Listar.vue": {
-    "file": "assets/Listar-DrcdAIRR.js",
+    "file": "assets/Listar-CSangZWG.js",
     "name": "Listar",
     "src": "resources/js/Pages/Oficios/Listar.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-BP2TU4Ic.js",
-      "_FileSaver.min-BVpoBxeZ.js"
+      "_index-D_U5kmfF.js",
+      "_FileSaver.min-BryFcQnb.js"
     ],
     "css": [
       "assets/Listar-2jfLVhQb.css"
     ]
   },
   "resources/js/Pages/Profile/Edit.vue": {
-    "file": "assets/Edit-CumzrpRw.js",
+    "file": "assets/Edit-TOwwzpj1.js",
     "name": "Edit",
     "src": "resources/js/Pages/Profile/Edit.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-SDWvGAX_.js",
+      "_TextInput-CphuW0L2.js",
       "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
       "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
       "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
-      "_PrimaryButton-BNNxo9MH.js"
+      "_PrimaryButton-Bsne-TNP.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/DeleteUserForm.vue": {
-    "file": "assets/DeleteUserForm-BdJcEZTI.js",
+    "file": "assets/DeleteUserForm-DgjGtzgq.js",
     "name": "DeleteUserForm",
     "src": "resources/js/Pages/Profile/Partials/DeleteUserForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-SDWvGAX_.js"
+      "_TextInput-CphuW0L2.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue": {
-    "file": "assets/UpdatePasswordForm-B5eP4ZrK.js",
+    "file": "assets/UpdatePasswordForm-B1LhYuRf.js",
     "name": "UpdatePasswordForm",
     "src": "resources/js/Pages/Profile/Partials/UpdatePasswordForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-SDWvGAX_.js",
-      "_PrimaryButton-BNNxo9MH.js"
+      "_TextInput-CphuW0L2.js",
+      "_PrimaryButton-Bsne-TNP.js"
     ]
   },
   "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue": {
-    "file": "assets/UpdateProfileInformationForm-DRJVcwKF.js",
+    "file": "assets/UpdateProfileInformationForm-Ct2IZt-g.js",
     "name": "UpdateProfileInformationForm",
     "src": "resources/js/Pages/Profile/Partials/UpdateProfileInformationForm.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_TextInput-SDWvGAX_.js",
-      "_PrimaryButton-BNNxo9MH.js"
+      "_TextInput-CphuW0L2.js",
+      "_PrimaryButton-Bsne-TNP.js"
     ]
   },
   "resources/js/Pages/Subprodutos/Create.vue": {
-    "file": "assets/Create-Dlm-Gxc7.js",
+    "file": "assets/Create-jltb2MX9.js",
     "name": "Create",
     "src": "resources/js/Pages/Subprodutos/Create.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-CmbZHeNN.js",
-      "_index-BP2TU4Ic.js"
+      "_index-9naK6wBv.js",
+      "_index-D_U5kmfF.js"
     ],
     "css": [
       "assets/Create-SsYe6lSH.css"
     ]
   },
   "resources/js/Pages/Subprodutos/Edit.vue": {
-    "file": "assets/Edit-BZwmKtAB.js",
+    "file": "assets/Edit-Ilme_rae.js",
     "name": "Edit",
     "src": "resources/js/Pages/Subprodutos/Edit.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-CmbZHeNN.js",
-      "_index-BP2TU4Ic.js"
+      "_index-9naK6wBv.js",
+      "_index-D_U5kmfF.js"
     ],
     "css": [
       "assets/Create-SsYe6lSH.css"
     ]
   },
   "resources/js/Pages/Subprodutos/Index.vue": {
-    "file": "assets/Index-rGlRovDe.js",
+    "file": "assets/Index-DLzhwrtX.js",
     "name": "Index",
     "src": "resources/js/Pages/Subprodutos/Index.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.js",
-      "_index-CmbZHeNN.js",
-      "_index-BP2TU4Ic.js"
+      "_index-9naK6wBv.js",
+      "_index-D_U5kmfF.js"
     ],
     "css": [
       "assets/Index-BMix1PCU.css"
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-Zh9q6vnk.js",
+    "file": "assets/app-iNqtGAP2.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,

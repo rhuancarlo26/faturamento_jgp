@@ -277,5 +277,28 @@ class OficiosController extends Controller
         return "OF_JGP.{$tipo}.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
     }
 
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'rodovia' => 'required|string',
+            'assunto' => 'required|string',
+            'texto_oficio' => 'required|string',
+        ]);
+
+        DB::table('registros_oficios')
+            ->where('id', $id)
+            ->update([
+                'rodovia' => $request->rodovia,
+                'assunto' => $request->assunto,
+                'texto' => $request->texto_oficio,
+                'updated_at' => now(),
+            ]);
+
+        return redirect()
+            ->route('oficios.listar.view')
+            ->with('success', 'Ofício atualizado com sucesso!');
+    }
+
+
 
 }

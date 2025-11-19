@@ -169,7 +169,7 @@ const logout = () => {
 
             <!-- Conteúdo principal -->
             <div class="flex-grow-1 p-4">
-                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1600px;">
+                <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1900px;">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h3 class="font-weight-bold text-dark m-0">Ofícios Cadastrados</h3>
                         <button class="btn btn-primary" @click="novoOficio">

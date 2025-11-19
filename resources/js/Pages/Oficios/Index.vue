@@ -269,7 +269,7 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
 
       <!-- Conteúdo principal -->
       <div class="flex-grow-1 p-4">
-        <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1400px;">
+        <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1900px;">
           <h3 class="text-center mb-4 font-weight-bold text-dark">CADASTRAR OFÍCIOS</h3>
 
           <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
@@ -351,9 +351,16 @@ watch(() => form.data_oficio, (newVal, oldVal) => {
                 </label>
                 <select id="oficioAnterior" class="form-control custom-select" @change="preencherOficio($event.target.value)">
                   <option value="">Selecione um modelo</option>
-                  <option v-for="o in oficiosSalvos" :key="o.id" :value="o.id">
-                    {{ o.oficio_num }}
+                  <option 
+                    v-for="o in oficiosSalvos" 
+                    :key="o.id" 
+                    :value="o.id"
+                    :title="o.oficio_num + ' - ' + o.assunto"
+                  >
+                    <span class="font-weight-bold">{{ o.oficio_num }}</span> - 
+                    {{ o.assunto.length > 160 ? o.assunto.substring(0, 160) + '...' : o.assunto }}
                   </option>
+
                 </select>
               </div>
             </div>
