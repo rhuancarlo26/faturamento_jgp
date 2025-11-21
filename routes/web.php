@@ -38,6 +38,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/oficios/pdf/{id}', [OficiosController::class, 'gerarPdf'])->name('oficios.pdf');
 
+    Route::put('/oficios/{id}', [OficiosController::class, 'update'])->whereNumber('id')->name('oficios.update');
+
+
+    Route::post('/oficios/{id}/upload-final', [OficiosController::class, 'uploadArquivoPersonalizado'])
+    ->name('oficios.uploadFinal');
+
+    Route::delete('/oficios/{id}/arquivo-personalizado', [OficiosController::class, 'removerArquivoPersonalizado'])
+    ->name('oficios.removerArquivo');
+
+
+
+
 });
 
 Auth::routes();

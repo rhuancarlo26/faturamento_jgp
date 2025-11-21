@@ -96,21 +96,6 @@ class OficiosController extends Controller
             ->with('success', 'Ofício registrado com sucesso!');
     }
 
-    /**
-     * Lista os ofícios via JSON (para DataTable ou fetch)
-     */
-    // public function listar(Request $request)
-    // {
-    //     $query = RegistrosOficio::query();
-
-    //     if ($request->filled('rodovia')) {
-    //         $query->where('rodovia', $request->rodovia);
-    //     }
-
-    //     $oficios = $query->orderBy('created_at', 'desc')->get();
-
-    //     return response()->json($oficios);
-    // }
 
     public function listar(Request $request)
     {
@@ -169,26 +154,38 @@ class OficiosController extends Controller
 
 
 
-    public function download($id)
+   public function download($id)
     {
         $oficio = DB::table('registros_oficios')->find($id);
         if (!$oficio) {
             abort(404, 'Ofício não encontrado.');
         }
 
-        // 🔹 Caminho do modelo (use o mesmo arquivo enviado)
+        // 🔹 1) SE EXISTIR ARQUIVO PERSONALIZADO, BAIXAR ELE
+        if (!empty($oficio->arquivo_personalizado)) {
+            $caminho = storage_path('app/public/' . $oficio->arquivo_personalizado);
+
+            if (file_exists($caminho)) {
+
+                // cria nome baseado no número do ofício
+                $nomeLimpo = preg_replace('/[\/\\\\]+/', '-', (string)($oficio->oficio_num ?? 'Oficio'));
+                $nomeDownload = "Oficio-{$nomeLimpo}.docx";
+
+                return response()->download($caminho, $nomeDownload);
+            }
+        }
+
+
+        // 🔹 2) SENÃO, GERAR O MODELO AUTOMATICAMENTE
         $modeloPath = public_path('Modelo_Oficio_Placeholders.docx');
         if (!file_exists($modeloPath)) {
             abort(500, 'Modelo de ofício não encontrado.');
         }
 
-        // 🔹 Força o PHPWord a abrir corretamente o ZIP (DOCX)
         \PhpOffice\PhpWord\Settings::setOutputEscapingEnabled(true);
 
-        // 🔹 Carrega o modelo
         $template = new \PhpOffice\PhpWord\TemplateProcessor($modeloPath);
 
-        // 🔹 Mapa de processos
         $processos = [
             'CT-94-2022' => '50600.011613/2022-03',
             'BR-230/MA' => '50600.010066/2018-54',
@@ -214,41 +211,23 @@ class OficiosController extends Controller
         ];
         $processoSEI = $processos[$oficio->rodovia] ?? '';
 
-        // 🔹 Data formatada por extenso
         $dataFormatada = Carbon::parse($oficio->data_registro)
             ->translatedFormat('d \\d\\e F \\d\\e Y');
 
-        // 🔹 Substituições — os nomes das variáveis são idênticos aos do modelo
         $template->setValue('oficio_numero', $oficio->oficio_num ?? '');
         $template->setValue('data_oficio', $dataFormatada);
         $template->setValue('assunto', $oficio->assunto ?? '');
         $template->setValue('texto_oficio', (string)($oficio->texto ?? ''));
         $template->setValue('processo_sei', $processoSEI);
 
-        // 🔹 Gera o DOCX preenchido
         $arquivoSaida = storage_path('app/public/Oficio-' . $oficio->id . '.docx');
         $template->saveAs($arquivoSaida);
 
-        // 🔹 Corrige o nome (sem barras)
         $nomeArquivo = preg_replace('/[\/\\\\]+/', '-', (string)($oficio->oficio_num ?? 'Oficio'));
 
-        return response()->download($arquivoSaida, "Oficio-{$nomeArquivo}.docx")->deleteFileAfterSend(true);
+        return response()->download($arquivoSaida, "Oficio-{$nomeArquivo}.docx")
+            ->deleteFileAfterSend(true);
     }
-
-
-
-    // private function sanitizarRodovia(string $rodovia): string
-    // {
-    //     return preg_replace('/[\s\/-]+/', '', $rodovia);
-    // }
-
-    // private function montarNumeroOficio(string $tipo, int $sequencia, int $ano, string $rodoviaSan): string
-    // {
-    //     if ($tipo === '') {
-    //         return "OF_JGP.__.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
-    //     }
-    //     return "OF_JGP.{$tipo}.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
-    // }
 
     
     private function sanitizarRodovia(string $rodovia): string
@@ -283,7 +262,28 @@ class OficiosController extends Controller
             'rodovia' => 'required|string',
             'assunto' => 'required|string',
             'texto_oficio' => 'required|string',
+            'oficio_sede' => 'nullable|boolean',
+            'oficio_dnit' => 'nullable|boolean',
         ]);
+
+        // Buscar ofício existente
+        $oficio = DB::table('registros_oficios')->find($id);
+
+        if (!$oficio) {
+            return response()->json(['error' => 'Ofício não encontrado'], 404);
+        }
+
+        // Determinar novo tipo
+        $tipo = '';
+        if ($request->oficio_dnit) $tipo = '02';
+        if ($request->oficio_sede) $tipo = '01';
+
+        // Atualizar número do ofício
+        if ($tipo !== '') {
+            $novoNumero = $this->atualizarTipoNoNumero($oficio->oficio_num, $tipo);
+        } else {
+            $novoNumero = $oficio->oficio_num; // sem mexer
+        }
 
         DB::table('registros_oficios')
             ->where('id', $id)
@@ -291,14 +291,74 @@ class OficiosController extends Controller
                 'rodovia' => $request->rodovia,
                 'assunto' => $request->assunto,
                 'texto' => $request->texto_oficio,
+                'oficio_num' => $novoNumero,
                 'updated_at' => now(),
             ]);
 
-        return redirect()
-            ->route('oficios.listar.view')
-            ->with('success', 'Ofício atualizado com sucesso!');
+        return response()->json(['success' => true]);
     }
 
+
+    private function atualizarTipoNoNumero($oficioNum, $novoTipo)
+    {
+        // Ex: OF_JGP.02.221/2025_BR437CERN
+        return preg_replace(
+            '/OF_JGP\.(..)\./',
+            "OF_JGP.{$novoTipo}.",
+            $oficioNum
+        );
+    }
+
+
+    public function uploadArquivoPersonalizado(Request $request, $id)
+    {
+        $request->validate([
+            'arquivo' => 'required|file|mimes:doc,docx|max:10240'
+        ]);
+
+        // Buscar o registro
+        $oficio = DB::table('registros_oficios')->find($id);
+
+        // Se já existe arquivo, apagar antes de substituir
+        if (!empty($oficio->arquivo_personalizado)) {
+            $oldPath = storage_path('app/public/' . $oficio->arquivo_personalizado);
+            if (file_exists($oldPath)) {
+                unlink($oldPath);
+            }
+        }
+
+        // Salva o novo arquivo
+        $path = $request->file('arquivo')->store('oficios_personalizados', 'public');
+
+        DB::table('registros_oficios')
+            ->where('id', $id)
+            ->update(['arquivo_personalizado' => $path]);
+
+        return response()->json(['success' => true, 'path' => $path]);
+    }
+
+    public function removerArquivoPersonalizado($id)
+    {
+        $oficio = DB::table('registros_oficios')->find($id);
+
+        if (!$oficio) {
+            return response()->json(['error' => 'Ofício não encontrado'], 404);
+        }
+
+        // apagar arquivo físico
+        if (!empty($oficio->arquivo_personalizado)) {
+            $path = storage_path('app/public/' . $oficio->arquivo_personalizado);
+            if (file_exists($path)) {
+                unlink($path);
+            }
+        }
+
+        // limpar coluna
+        DB::table('registros_oficios')->where('id', $id)
+            ->update(['arquivo_personalizado' => null]);
+
+        return response()->json(['success' => true]);
+    }
 
 
 }

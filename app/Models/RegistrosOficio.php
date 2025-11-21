@@ -14,6 +14,7 @@ class RegistrosOficio extends Model
         'oficio_num',
         'assunto',
         'texto',
-        'autor'
+        'autor',
+        'arquivo_personalizado'
     ];
 }

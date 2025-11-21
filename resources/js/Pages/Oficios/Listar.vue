@@ -4,6 +4,7 @@ import { Inertia } from '@inertiajs/inertia';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { saveAs } from 'file-saver'; // ← ADICIONADO
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 defineProps({
     user: Object,
@@ -13,6 +14,93 @@ const oficios = ref([]);
 const filtroRodovia = ref('');
 const carregando = ref(false);
 const flashSuccess = ref(null);
+const modalEditar = ref(false);
+const editando = ref(null);
+const modalUpload = ref(false);
+const oficioUpload = ref(null);
+const inputArquivo = ref(null);
+
+const formEditar = ref({
+    id: null,
+    rodovia: '',
+    assunto: '',
+    texto_oficio: '',
+    oficio_sede: false,
+    oficio_dnit: false
+});
+
+const abrirModalEditar = (oficio) => {
+    editando.value = oficio;
+
+    formEditar.value = {
+        id: oficio.id,
+        rodovia: oficio.rodovia,
+        assunto: oficio.assunto,
+        texto_oficio: oficio.texto,
+        oficio_sede: oficio.oficio_sede == 1,
+        oficio_dnit: oficio.oficio_dnit == 1
+    };
+
+    modalEditar.value = true;
+};
+
+const salvarEdicao = async () => {
+    try {
+        const response = await fetch(`/oficios/${formEditar.value.id}`, {
+            method: "PUT",
+            headers: { 
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify(formEditar.value)
+        });
+
+        if (!response.ok) throw new Error("Erro ao atualizar");
+
+        modalEditar.value = false;
+        carregarOficios(); // recarrega tabela
+    } catch (error) {
+        alert("Erro ao salvar.");
+        console.error(error);
+    }
+};
+
+const abrirUpload = (oficio) => {
+    oficioUpload.value = oficio;
+    modalUpload.value = true;
+};
+
+const enviarArquivoPersonalizado = async () => {
+    if (!inputArquivo.value.files.length) {
+        alert("Selecione um arquivo .doc ou .docx");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("arquivo", inputArquivo.value.files[0]);
+
+    try {
+        const response = await fetch(`/oficios/${oficioUpload.value.id}/upload-final`, {
+
+
+            method: "POST",
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: formData
+        });
+
+        if (!response.ok) throw new Error("Erro ao enviar arquivo.");
+
+        modalUpload.value = false;
+        carregarOficios(); // atualizar tabela
+
+    } catch (error) {
+        alert("Erro ao enviar arquivo.");
+        console.error(error);
+    }
+};
+
 
 // 📌 Carregar ofícios
 const carregarOficios = async () => {
@@ -102,6 +190,40 @@ const baixarOficio = async (oficio) => {
         alert('Erro ao baixar o ofício. Verifique o modelo .docx.');
     }
 };
+
+const baixar = (oficio) => {
+    if (oficio.arquivo_personalizado && oficio.arquivo_personalizado !== "") {
+        // Tem arquivo enviado → baixa do backend
+        window.location.href = `/oficios/${oficio.id}/download`;
+    } else {
+        // Não tem arquivo → gera no front usando docxtemplater
+        baixarOficio(oficio);
+    }
+};
+
+const removerArquivo = async () => {
+    if (!confirm("Tem certeza que deseja remover o arquivo enviado?")) return;
+
+    try {
+        const response = await fetch(`/oficios/${oficioUpload.value.id}/arquivo-personalizado`, {
+            method: "DELETE",
+            headers: {
+                "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
+            }
+        });
+
+        if (!response.ok) throw new Error("Erro ao remover arquivo.");
+
+        // atualizar tabela
+        modalUpload.value = false;
+        carregarOficios();
+
+    } catch (error) {
+        alert("Erro ao remover arquivo.");
+        console.error(error);
+    }
+};
+
 
 onMounted(() => {
     carregarOficios();
@@ -254,13 +376,36 @@ const logout = () => {
                                     <td>{{ oficio.autor_nome }}</td>
                                     <td class="text-center">
                                         <button 
-                                            @click="baixarOficio(oficio)" 
-                                            class="btn btn-sm btn-success mr-1"
-                                            title="Baixar Word"
+                                            @click="baixar(oficio)"
+                                            class="btn btn-sm"
+                                            style="color: white; background-color: #28a745;"
+                                            title="Baixar"
                                         >
-                                            Baixar
+                                            <i class="fas fa-download"></i>
                                         </button>
+
+                                        <button
+                                            v-if="oficio.autor === user.id"
+                                            @click="abrirModalEditar(oficio)"
+                                            class="btn btn-sm"
+                                            style="color: white; background-color: #f0ad4e;"
+                                            title="Editar"
+                                        >
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+
+                                        <button 
+                                            v-if="oficio.autor === user.id"
+                                            @click="abrirUpload(oficio)"
+                                            class="btn btn-sm"
+                                            style="color: white; background-color: #6f42c1;"
+                                            title="Enviar arquivo personalizado"
+                                        >
+                                            <i class="fas fa-file-upload"></i>
+                                        </button>
+
                                     </td>
+
                                 </tr>
                             </tbody>
                         </table>
@@ -268,16 +413,178 @@ const logout = () => {
                 </div>
             </div>
         </div>
+        <!-- MODAL EDITAR -->
+        <div
+            class="modal fade"
+            :class="{ show: modalEditar }"
+            v-show="modalEditar"
+            style="display: block;"
+            tabindex="-1"
+            role="dialog"
+        >
+            <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                <div class="modal-content">
+                <div class="modal-header" 
+                    style="background-color: #4b79a1; color: white; justify-content: center;">
+
+                    <h5 class="modal-title m-0">EDITAR OFÍCIO</h5>
+
+                    <button type="button" class="close position-absolute" style="right: 15px; color:white;"
+                        @click="modalEditar = false">
+                        &times;
+                    </button>
+                </div>
+
+
+                    <div class="modal-body">
+                        <!-- Rodovia -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Rodovia</label>
+                            <select v-model="formEditar.rodovia" class="form-control">
+                                <option value="">Escolher rodovia</option>
+                                <option value="CT-94-2022">CT-94-2022</option>
+                                <option value="BR-230/MA">BR-230/MA</option>
+                                <option value="BR-437 CE/RN">BR-437 CE/RN</option>
+                                <option value="BR-402 MA/PI">BR-402 MA/PI</option>
+                                <option value="BR-116 CE">BR-116 CE</option>
+                                <option value="BR-020 GO/BA">BR-020 GO/BA</option>
+                                <option value="BR-304 RN">BR-304 RN</option>
+                                <option value="BR-316 PI">BR-316 PI</option>
+                                <option value="BR-104 RN">BR-104 RN</option>
+                                <option value="BR-030 BA">BR-030 BA</option>
+                                <option value="BR-122 BA">BR-122 BA</option>
+                                <option value="BR-316 PI (km 33,54 ao km 55,60)">
+                                    BR-316 PI (km 33,54 ao km 55,60)
+                                </option>
+                                <option value="BR-110/316/PE">BR-110/316/PE</option>
+                                <option value="BR-349/SE/AL">BR-349/SE/AL</option>
+                                <option value="BR-135/BA">BR-135/BA</option>
+                                <option value="BR-324/BA">BR-324/BA</option>
+                                <option value="BR-316/MA">BR-316/MA</option>
+                                <option value="BR-226/CE">BR-226/CE</option>
+                                <option value="BR-010/MA">BR-010/MA</option>
+                                <option value="BR-104/AL">BR-104/AL</option>
+                                <option value="BR-222/CE">BR-222/CE</option>
+                                <option value="BR-423, BR-424, BR-316 PE/AL">BR-423, BR-424, BR-316 PE/AL</option>
+                                <option value="BR-232 PE">BR-232 PE</option>
+                                <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
+                                <option value="BR-230 PI/CE">BR-230 PI/CE</option>
+                            </select>
+                        </div>
+
+                        <!-- Assunto -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Assunto</label>
+                            <textarea rows="6" v-model="formEditar.assunto" class="form-control" ></textarea>
+                        </div>
+
+                        <!-- Texto -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Texto do Ofício</label>
+                            <textarea rows="6" v-model="formEditar.texto_oficio" class="form-control"></textarea>
+                        </div>
+
+                        <!-- SEDE / DNIT -->
+                        <div class="form-group d-flex">
+                            <div class="custom-control custom-checkbox mr-4">
+                                <input
+                                    type="checkbox"
+                                    class="custom-control-input"
+                                    id="editOficioSede"
+                                    v-model="formEditar.oficio_sede"
+                                />
+                                <label class="custom-control-label" for="editOficioSede">Ofício SEDE</label>
+                            </div>
+
+                            <div class="custom-control custom-checkbox">
+                                <input
+                                    type="checkbox"
+                                    class="custom-control-input"
+                                    id="editOficioDnit"
+                                    v-model="formEditar.oficio_dnit"
+                                />
+                                <label class="custom-control-label" for="editOficioDnit">Ofício DNIT</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" @click="modalEditar = false">Cancelar</button>
+                        <button class="btn btn-warning text-white" @click="salvarEdicao">Salvar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- backdrop do modal -->
+        <div class="modal-backdrop fade show" v-if="modalEditar"></div>
+
+        <!-- MODAL UPLOAD -->
+        <div 
+            class="modal fade" 
+            :class="{ show: modalUpload }" 
+            v-show="modalUpload"
+            style="display:block;"
+        >
+            <div class="modal-dialog modal-md modal-dialog-centered"> <!-- AUMENTEI DE modal-sm → modal-md -->
+                <div class="modal-content">
+
+                    <div class="modal-header" style="background:#6f42c1; color:white; justify-content:center;">
+                        <h5 class="modal-title m-0">Enviar Word</h5>
+                        <button type="button" class="close" style="color:white;" @click="modalUpload = false">
+                            &times;
+                        </button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <!-- SE EXISTE ARQUIVO MOSTRA A LIXEIRA -->
+                        <div v-if="oficioUpload?.arquivo_personalizado" 
+                            class="alert alert-info d-flex justify-content-between align-items-center">
+                            <span>Já existe um arquivo enviado.</span>
+
+                            <button class="btn btn-danger btn-sm" @click="removerArquivo">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+
+                        <label class="font-weight-bold">Selecione o arquivo</label>
+                        <input type="file" ref="inputArquivo" class="form-control" accept=".doc,.docx">
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary btn-sm" @click="modalUpload = false">Cancelar</button>
+                        <button class="btn btn-primary btn-sm" @click="enviarArquivoPersonalizado">Enviar</button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-backdrop fade show" v-if="modalUpload"></div>
+
+
+
     </div>
+    
 </template>
 
 <style>
 @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
 @import 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css';
 
-.table th, .table td { vertical-align: middle; }
-thead.thead-light th { background-color: #f8f9fa; font-weight: 600; }
-.custom-select { appearance: none; background-position: right 0.75rem center; background-size: 16px 12px; }
+.table th,
+.table td {
+    vertical-align: middle;
+}
+thead.thead-light th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+.custom-select {
+    appearance: none;
+    background-position: right 0.75rem center;
+    background-size: 16px 12px;
+}
 
 .btn-outline-primary {
     display: inline-flex;
@@ -290,5 +597,7 @@ thead.thead-light th { background-color: #f8f9fa; font-weight: 600; }
     background-color: #007bff;
     color: white;
 }
-.btn-outline-primary i { font-size: 1rem; }
+.btn-outline-primary i {
+    font-size: 1rem;
+}
 </style>
