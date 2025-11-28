@@ -120,11 +120,27 @@ const carregarOficios = async () => {
     }
 };
 
+// 🔹 Modelo de ofício por usuário
+const modelosPorUsuario = {
+    4: '/Bruno_Modelo_Oficio_Placeholders.docx',     // Bruno
+    5: '/Elenito_Modelo_Oficio_Placeholders.docx',   // Elenito
+    6: '/Vinicius_Modelo_Oficio_Placeholders.docx',  // Vinícius
+    8: '/Barco_Modelo_Oficio_Placeholders.docx',     // Guilherme Barco
+    9: "/Juan_Modelo_Oficio_Placeholders.docx",     // Michelle Menezes
+};
+
+// 🔹 Modelo padrão (fallback)
+const modeloPadrao = '/Modelo_Oficio_Placeholders.docx';
+
+
 // 📌 BAIXAR DOCX DIRETO DA LISTAGEM
 const baixarOficio = async (oficio) => {
     try {
-        // 1. Busca o modelo
-        const response = await fetch('/Modelo_Oficio_Placeholders.docx');
+        // 🔹 Escolher modelo com base no AUTOR do ofício
+        const modelo = modelosPorUsuario[oficio.autor] ?? modeloPadrao;
+
+        // 1. Busca o modelo certo
+        const response = await fetch(modelo);
         if (!response.ok) throw new Error('Modelo não encontrado');
         const arrayBuffer = await response.arrayBuffer();
         const zip = new PizZip(arrayBuffer);
@@ -138,8 +154,10 @@ const baixarOficio = async (oficio) => {
 
         // 3. Dados do ofício
         const dataExtenso = new Date(oficio.data_registro).toLocaleDateString('pt-BR', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        }).replace(/ de /g, ' de ');
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+        });
 
         const processoSEI = {
             'CT-94-2022': '50600.011613/2022-03',
@@ -166,10 +184,10 @@ const baixarOficio = async (oficio) => {
         }[oficio.rodovia] || '';
 
         doc.setData({
-            oficio_numero: oficio.oficio_num || '',
+            oficio_numero: oficio.oficio_num,
             data_oficio: dataExtenso,
-            assunto: oficio.assunto || '',
-            texto_oficio: (oficio.texto || '').replace(/\r\n|\r|\n/g, '\n'),
+            assunto: oficio.assunto,
+            texto_oficio: (oficio.texto ?? '').replace(/\r\n|\r|\n/g, '\n'),
             processo_sei: processoSEI
         });
 
@@ -177,19 +195,19 @@ const baixarOficio = async (oficio) => {
 
         // 4. Gera o blob
         const blob = doc.getZip().generate({
-            type: 'blob',
-            mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            type: "blob",
+            mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         });
 
-        // 5. Baixa
-        const nomeLimpo = (oficio.oficio_num || 'oficio').replace(/[\/\\]/g, '-');
+        const nomeLimpo = oficio.oficio_num.replace(/[\/\\]/g, "-");
         saveAs(blob, `Oficio_${nomeLimpo}.docx`);
 
     } catch (error) {
-        console.error('Erro ao gerar DOCX:', error);
-        alert('Erro ao baixar o ofício. Verifique o modelo .docx.');
+        console.error("Erro ao gerar DOCX:", error);
+        alert("Erro ao gerar o documento.");
     }
 };
+
 
 const baixar = (oficio) => {
     if (oficio.arquivo_personalizado && oficio.arquivo_personalizado !== "") {

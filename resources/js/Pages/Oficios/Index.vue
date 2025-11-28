@@ -6,7 +6,8 @@ import Docxtemplater from 'docxtemplater';
 import { renderAsync } from 'docx-preview';
 import { saveAs } from 'file-saver';
 
-defineProps({
+
+const { user } = defineProps({
   user: Object,
 });
 
@@ -120,44 +121,58 @@ const formatarDataPorExtenso = (isoDate) => {
 
 const gerarDocumento = async () => {
   try {
-    const response = await fetch('/Modelo_Oficio_Placeholders.docx');
-    if (!response.ok) throw new Error('Modelo não encontrado');
+    // 🔥 Seleciona o modelo conforme o usuário
+    const modelos = {
+      4: "/Bruno_Modelo_Oficio_Placeholders.docx",
+      5: "/Elenito_Modelo_Oficio_Placeholders.docx",
+      6: "/Vinicius_Modelo_Oficio_Placeholders.docx",
+      8: "/Barco_Modelo_Oficio_Placeholders.docx",
+      9: "/Juan_Modelo_Oficio_Placeholders.docx",
+    };
+
+    // se não estiver listado → usa o padrão
+    const modelo = modelos[user.id] || "/Modelo_Oficio_Placeholders.docx";
+
+    // 📌 Agora carrega o modelo correto
+    const response = await fetch(modelo);
+    if (!response.ok) throw new Error("Modelo não encontrado");
 
     const arrayBuffer = await response.arrayBuffer();
     const zip = new PizZip(arrayBuffer);
-    
+
     doc.value = new Docxtemplater(zip, {
       paragraphLoop: true,
       linebreaks: true,
-      delimiters: { start: '[[', end: ']]' },
+      delimiters: { start: "[[", end: "]]" },
     });
 
     doc.value.setData({
-      assunto: form.assunto ?? '',
-      texto_oficio: (form.texto_oficio ?? '').replace(/\r\n|\r|\n/g, '\n'),
-      oficio_numero: generateOficioNumero.value ?? '',
+      assunto: form.assunto ?? "",
+      texto_oficio: (form.texto_oficio ?? "").replace(/\r\n|\r|\n/g, "\n"),
+      oficio_numero: generateOficioNumero.value ?? "",
       data_oficio: formatarDataPorExtenso(form.data_oficio),
-      processo_sei: processoSEI.value ?? ''
+      processo_sei: processoSEI.value ?? "",
     });
 
     doc.value.render();
 
     const out = doc.value.getZip().generate({
-      type: 'blob',
-      mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      type: "blob",
+      mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     });
 
     mostrarModalVisualizacao.value = true;
     await nextTick();
     if (docxContainer.value) {
-      docxContainer.value.innerHTML = '';
-      renderAsync(out, docxContainer.value, null, { className: 'docx' });
+      docxContainer.value.innerHTML = "";
+      renderAsync(out, docxContainer.value, null, { className: "docx" });
     }
   } catch (error) {
-    console.error('Erro:', error);
-    alert('Erro ao gerar documento.');
+    console.error("Erro:", error);
+    alert("Erro ao gerar documento.");
   }
 };
+
 
 const baixarDocumento = () => {
   if (!doc.value) {

@@ -256,6 +256,32 @@ class OficiosController extends Controller
         return "OF_JGP.{$tipo}.{$sequencia}/{$ano}" . ($rodoviaSan ? "_{$rodoviaSan}" : '');
     }
 
+    private function atualizarRodoviaNoNumero($oficioNum, $novaRodovia)
+    {
+        // Sanitiza rodovia nova
+        $rodoviaSan = $this->sanitizarRodovia($novaRodovia);
+
+        // 1) Caso especial CT-94-2022 → final é com hífens
+        if ($novaRodovia === 'CT-94-2022') {
+
+            // Substituir qualquer coisa após o ano por `-CT-94-2022`
+            return preg_replace(
+                '/\/\d{4}.*/',
+                '/' . date('Y') . '-CT-94-2022',
+                $oficioNum
+            );
+        }
+
+        // 2) Rodovias normais → formato: _BR437CERN
+
+        // Remove parte antiga da rodovia no final
+        $semRodoviaAntiga = preg_replace('/(_[A-Za-z0-9]+$|-[A-Za-z0-9-]+$)/', '', $oficioNum);
+
+        // Junta com nova rodovia sanitizada
+        return $semRodoviaAntiga . '_' . $rodoviaSan;
+    }
+
+
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -266,24 +292,25 @@ class OficiosController extends Controller
             'oficio_dnit' => 'nullable|boolean',
         ]);
 
-        // Buscar ofício existente
         $oficio = DB::table('registros_oficios')->find($id);
 
         if (!$oficio) {
             return response()->json(['error' => 'Ofício não encontrado'], 404);
         }
 
-        // Determinar novo tipo
+        // Determina novo tipo
         $tipo = '';
         if ($request->oficio_dnit) $tipo = '02';
         if ($request->oficio_sede) $tipo = '01';
 
-        // Atualizar número do ofício
+        // 1️⃣ Atualiza APENAS o tipo, se marcado
+        $novoNumero = $oficio->oficio_num;
         if ($tipo !== '') {
-            $novoNumero = $this->atualizarTipoNoNumero($oficio->oficio_num, $tipo);
-        } else {
-            $novoNumero = $oficio->oficio_num; // sem mexer
+            $novoNumero = $this->atualizarTipoNoNumero($novoNumero, $tipo);
         }
+
+        // 2️⃣ Atualiza a rodovia dentro do numero
+        $novoNumero = $this->atualizarRodoviaNoNumero($novoNumero, $request->rodovia);
 
         DB::table('registros_oficios')
             ->where('id', $id)
@@ -297,7 +324,6 @@ class OficiosController extends Controller
 
         return response()->json(['success' => true]);
     }
-
 
     private function atualizarTipoNoNumero($oficioNum, $novoTipo)
     {
