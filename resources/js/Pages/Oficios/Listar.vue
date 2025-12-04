@@ -127,6 +127,7 @@ const modelosPorUsuario = {
     6: '/Vinicius_Modelo_Oficio_Placeholders.docx',  // Vinícius
     8: '/Barco_Modelo_Oficio_Placeholders.docx',     // Guilherme Barco
     9: "/Juan_Modelo_Oficio_Placeholders.docx",     // Michelle Menezes
+    10: "/Adriana_Modelo_Oficio_Placeholders.docx", // Adriana
 };
 
 // 🔹 Modelo padrão (fallback)

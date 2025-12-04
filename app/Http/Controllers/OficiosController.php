@@ -27,7 +27,31 @@ class OficiosController extends Controller
     public function ultimoContador(Request $request)
     {
         $ano = (int) ($request->input('ano') ?: now()->year);
+        $tipo = $request->input('tipo'); // 'dnit' ou 'sede'
 
+        if ($tipo === 'sede') {
+
+            // PROCURA OFÍCIOS SEDE NO ANO
+            $ultimo = DB::table('registros_oficios')
+                ->whereYear('data_registro', $ano)
+                ->where('oficio_num', 'LIKE', "OF_JGP.01.%/$ano%")
+                ->max('contador');
+
+            // Se não houver NENHUM SEDE no ano
+            if (!$ultimo) {
+                return response()->json([
+                    'ano' => $ano,
+                    'ultimo_contador' => ($ano == 2025 ? 21 : 0) // para somar +1 no front
+                ]);
+            }
+
+            return response()->json([
+                'ano' => $ano,
+                'ultimo_contador' => $ultimo,
+            ]);
+        }
+
+        // DNIT (padrão)
         $ultimo = DB::table('registros_oficios')
             ->whereYear('data_registro', $ano)
             ->max('contador');
@@ -37,6 +61,7 @@ class OficiosController extends Controller
             'ultimo_contador' => $ultimo,
         ]);
     }
+
 
     /**
      * Armazena um novo ofício
@@ -55,21 +80,48 @@ class OficiosController extends Controller
 
         $ano = Carbon::parse($request->data_oficio)->year;
 
-        // 🔸 Verifica último contador do ano
-        $ultimo = DB::table('registros_oficios')
-            ->whereYear('data_registro', $ano)
-            ->max('contador');
+        // =====================================================
+        //      SEDE → usa contador separado
+        // =====================================================
+        if ($request->boolean('oficio_sede')) {
 
-        // 🔸 Se for o primeiro ofício do ano, obriga a informar contador manual
-        if (is_null($ultimo)) {
-            $request->validate([
-                'contador' => 'required|integer|min:1',
-            ]);
-            $contador = (int) $request->contador;
-        } else {
-            $contador = $ultimo + 1;
+            // Busca apenas SEDE no ano corrente
+            $ultimoSede = DB::table('registros_oficios')
+                ->whereYear('data_registro', $ano)
+                ->where('oficio_num', 'LIKE', "OF_JGP.01.%/$ano%")
+                ->max('contador');
+
+            if ($ultimoSede) {
+                $contador = $ultimoSede + 1;
+            } else {
+                // PRIMEIRO SEDE DO ANO
+                $contador = ($ano == 2025 ? 22 : 1);
+            }
+
+        }
+        // =====================================================
+        //      DNIT → contador normal (como já funciona)
+        // =====================================================
+        else {
+
+            $ultimo = DB::table('registros_oficios')
+                ->whereYear('data_registro', $ano)
+                ->max('contador');
+
+            if ($ultimo) {
+                $contador = $ultimo + 1;
+            } else {
+                // Primeiro DNIT do ano → usa contador manual
+                $request->validate([
+                    'contador' => 'required|integer|min:1',
+                ]);
+                $contador = (int) $request->contador;
+            }
         }
 
+        // =====================================================
+        //      TIPO DO OFÍCIO 
+        // =====================================================
         $tipo = $this->resolverTipo(
             $request->boolean('oficio_dnit'),
             $request->boolean('oficio_sede')
@@ -95,6 +147,7 @@ class OficiosController extends Controller
             ->route('oficios.listar.view')
             ->with('success', 'Ofício registrado com sucesso!');
     }
+
 
 
     public function listar(Request $request)

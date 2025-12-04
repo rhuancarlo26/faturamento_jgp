@@ -62,24 +62,35 @@ const docxContainer = ref(null);
 // 📌 Contador sequencial
 const carregarProximoContador = async (ano) => {
   try {
-    const res = await fetch(`/oficios/ultimo-contador?ano=${ano}`);
-    if (!res.ok) throw new Error('Falha ao consultar contador');
-    const data = await res.json();
-    if (data.ultimo_contador === null || data.ultimo_contador === undefined) {
-      precisaContadorManual.value = true;
-      mostrarModalContador.value = true;
+
+    // Determina o tipo com base nos checkboxes
+    let tipo = null;
+    if (form.oficio_sede) tipo = "sede";
+    if (form.oficio_dnit) tipo = "dnit";
+
+    // Se não escolheu sede nem dnit → não faz nada
+    if (!tipo) {
       form.contador = null;
-    } else {
-      precisaContadorManual.value = false;
-      form.contador = Number(data.ultimo_contador) + 1;
+      return;
     }
+
+    const res = await fetch(`/oficios/ultimo-contador?ano=${ano}&tipo=${tipo}`);
+    if (!res.ok) throw new Error('Falha ao consultar contador');
+
+    const data = await res.json();
+
+    // Backend já devolve o último contador adequado ao tipo
+    form.contador = Number(data.ultimo_contador) + 1;
+
+    precisaContadorManual.value = false;
+    mostrarModalContador.value = false;
+
   } catch (e) {
     console.error(e);
-    precisaContadorManual.value = true;
-    mostrarModalContador.value = true;
     form.contador = null;
   }
 };
+
 
 const confirmarContadorManual = () => {
   if (!contadorManualTemp.value || contadorManualTemp.value < 1) return;
@@ -128,6 +139,7 @@ const gerarDocumento = async () => {
       6: "/Vinicius_Modelo_Oficio_Placeholders.docx",
       8: "/Barco_Modelo_Oficio_Placeholders.docx",
       9: "/Juan_Modelo_Oficio_Placeholders.docx",
+      10: "/Adriana_Modelo_Oficio_Placeholders.docx",
     };
 
     // se não estiver listado → usa o padrão
@@ -231,14 +243,43 @@ onMounted(() => {
   carregarProximoContador(new Date(form.data_oficio).getFullYear());
 });
 
-watch(() => form.oficio_sede, (v) => { if (v) form.oficio_dnit = false; });
-watch(() => form.oficio_dnit, (v) => { if (v) form.oficio_sede = false; });
-watch(() => form.data_oficio, (newVal, oldVal) => {
-  if (!newVal) return;
-  const yNew = new Date(newVal).getFullYear();
-  const yOld = oldVal ? new Date(oldVal).getFullYear() : yNew;
-  if (yNew !== yOld) carregarProximoContador(yNew);
+watch(() => form.oficio_sede, (v) => {
+  if (v) {
+    form.oficio_dnit = false;
+    carregarProximoContador(new Date(form.data_oficio).getFullYear());
+  } else {
+    form.contador = null;
+  }
 });
+
+watch(() => form.oficio_dnit, (v) => {
+  if (v) {
+    form.oficio_sede = false;
+    carregarProximoContador(new Date(form.data_oficio).getFullYear());
+  } else {
+    form.contador = null;
+  }
+});
+
+watch(() => form.oficio_dnit, (v) => {
+  if (v) {
+    form.oficio_sede = false;
+    carregarProximoContador(new Date(form.data_oficio).getFullYear());
+  } else {
+    form.contador = null;
+  }
+});
+
+
+
+// watch(() => form.oficio_sede, (v) => { if (v) form.oficio_dnit = false; });
+// watch(() => form.oficio_dnit, (v) => { if (v) form.oficio_sede = false; });
+// watch(() => form.data_oficio, (newVal, oldVal) => {
+//   if (!newVal) return;
+//   const yNew = new Date(newVal).getFullYear();
+//   const yOld = oldVal ? new Date(oldVal).getFullYear() : yNew;
+//   if (yNew !== yOld) carregarProximoContador(yNew);
+// });
 </script>
 
 <template>
