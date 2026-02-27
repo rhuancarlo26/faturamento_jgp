@@ -5,6 +5,7 @@ import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { renderAsync } from 'docx-preview';
 import { saveAs } from 'file-saver';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 
 const { user } = defineProps({
@@ -46,7 +47,8 @@ const processosPorBR = {
   'BR-226/CE': '50603.001120/2024-99',
   'BR-010/MA': '50600.033749/2024-28',
   'BR-104/AL': '50600.005357/2025-50',
-  'BR-222/CE': '50600.034578/2024-54'
+  'BR-222/CE': '50600.034578/2024-54',
+  'BR-235/SE': '50600.028817/2025-18'
 };
 
 const processoSEI = computed(() => processosPorBR[form.rodovia] || '');
@@ -143,7 +145,7 @@ const gerarDocumento = async () => {
     };
 
     // se não estiver listado → usa o padrão
-    const modelo = modelos[user.id] || "/Modelo_Oficio_Placeholders.docx";
+    const modelo = modelos[user.id] || "/Modelo_Oficios_Placeholders.docx";
 
     // 📌 Agora carrega o modelo correto
     const response = await fetch(modelo);
@@ -270,59 +272,12 @@ watch(() => form.oficio_dnit, (v) => {
   }
 });
 
-
-
-// watch(() => form.oficio_sede, (v) => { if (v) form.oficio_dnit = false; });
-// watch(() => form.oficio_dnit, (v) => { if (v) form.oficio_sede = false; });
-// watch(() => form.data_oficio, (newVal, oldVal) => {
-//   if (!newVal) return;
-//   const yNew = new Date(newVal).getFullYear();
-//   const yOld = oldVal ? new Date(oldVal).getFullYear() : yNew;
-//   if (yNew !== yOld) carregarProximoContador(yNew);
-// });
 </script>
 
 <template>
+  <AuthenticatedLayout :user="user">
   <div class="min-vh-100 bg-light">
-    <!-- Barra superior -->
-    <nav class="navbar navbar-dark" style="background-color: #3d85c6;">
-      <div class="container-fluid d-flex align-items-center">
-        <img src="/images/logo.jpg" alt="Logo" style="height: 40px; margin-right: 10px;">
-        <span class="navbar-brand mb-0 h1">Sistema de Controle JGP - DNIT</span>
-        <div class="dropdown ml-auto">
-          <span class="navbar-text text-white dropdown-toggle d-flex align-items-center" id="userDropdown" data-toggle="dropdown">
-            <i class="fas fa-user-circle mr-2" style="font-size: 1.5rem;"></i>
-            {{ user?.name || 'N/A' }}
-          </span>
-          <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
-            <a class="dropdown-item" href="#" @click.prevent="logout">Sair</a>
-          </div>
-        </div>
-      </div>
-    </nav>
-
     <div class="d-flex">
-      <!-- Menu lateral -->
-      <div class="bg-white border-right shadow-sm" style="width: 250px; min-height: calc(100vh - 56px);">
-        <ul class="nav flex-column p-3">
-          <li class="nav-item">
-            <a class="nav-link text-uppercase font-weight-bold" style="color: #4B5563; font-size: 0.9rem;" href="/subprodutos">
-              <i class="fas fa-search mr-2" style="color: #007BFF;"></i> CONSULTAR SUBPRODUTOS
-            </a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link text-uppercase font-weight-bold" style="color: #4B5563; font-size: 0.9rem;" href="/subprodutos/create">
-              <i class="fas fa-plus-circle mr-2" style="color: #28A745;"></i> CADASTRAR SUBPRODUTOS
-            </a>
-          </li>
-          <li class="nav-item active">
-            <a class="nav-link text-uppercase font-weight-bold" style="color: #4B5563; font-size: 0.9rem;" href="/oficios-listar">
-              <i class="fas fa-file-alt mr-2" style="color: #007BFF;"></i> OFÍCIOS
-            </a>
-          </li>
-        </ul>
-      </div>
-
       <!-- Conteúdo principal -->
       <div class="flex-grow-1 p-4">
         <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1900px;">
@@ -366,6 +321,7 @@ watch(() => form.oficio_dnit, (v) => {
                   <option value="BR-232 PE">BR-232 PE</option>
                   <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
                   <option value="BR-230 PI/CE">BR-230 PI/CE</option>
+                  <option value="BR-235/SE">BR-235/SE</option>
                 </select>
               </div>
               <div class="form-group col-md-4 mb-3">
@@ -442,9 +398,7 @@ watch(() => form.oficio_dnit, (v) => {
                 <button type="button" class="btn btn-outline-primary mr-2" @click="gerarDocumento">
                     Avançar para Visualização
                 </button>
-
             </div>
-
           </form>
         </div>
       </div>
@@ -509,6 +463,7 @@ watch(() => form.oficio_dnit, (v) => {
     <div class="modal-backdrop fade show" v-show="mostrarModalVisualizacao" style="z-index:1055;"></div>
 
   </div>
+  </AuthenticatedLayout>
 </template>
 
 <style>

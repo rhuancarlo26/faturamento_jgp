@@ -13,6 +13,7 @@ class Subproduto extends Model
         'subproduto', 
         'descricao_siac', 
         'descricao_revisada',
-        'unidade_de_medida' 
+        'unidade_de_medida', 
+        'desc_dav'
     ];
 }

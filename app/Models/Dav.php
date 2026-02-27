@@ -1,0 +1,38 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Dav extends Model
+{
+    protected $table = 'dav';
+
+    protected $fillable = [
+        'coordenador',
+        'empreendimento_id',
+        'n_ose',
+        'produto',
+        'subproduto',
+        'status',
+        'diarias_total', 
+        'aereo_total', 
+        'aquatico_total', 
+        'hatch_total', 
+        'pickup_total'
+    ];
+
+    // 🔗 Um DAV tem vários profissionais vinculados
+    public function profissionais()
+    {
+        return $this->hasMany(DavProfissionalDocumento::class, 'dav_id');
+    }
+
+    // 🔗 Relacionamento com empreendimento
+    public function empreendimento()
+    {
+        return $this->belongsTo(Empreendimento::class, 'empreendimento_id');
+    }
+
+    
+}
