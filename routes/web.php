@@ -97,6 +97,14 @@ use App\Http\Controllers\DavController;
         Route::post('/dav/profissionais', [DavController::class, 'storeProfissional']);
         Route::get('/dav/{dav}', [DavController::class, 'show'])->name('dav.show');
 
+        Route::patch('/dav/{dav}/aprovar', [DavController::class, 'aprovar'])->name('dav.aprovar');
+        Route::patch('/dav/{dav}/reprovar', [DavController::class, 'reprovar'])->name('dav.reprovar');
+
+        Route::post('/dav/{dav}/retificar', [DavController::class, 'retificar'])->name('dav.retificar');
+        Route::get('/dav/{dav}/edit', [DavController::class, 'edit'])->name('dav.edit');
+        Route::put('/dav/{dav}', [DavController::class, 'update'])->name('dav.update');
+        
+
         Route::get('/dav/{dav}/download', [DavController::class, 'download'])->name('dav.download');
     });
 

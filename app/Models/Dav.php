@@ -15,6 +15,11 @@ class Dav extends Model
         'produto',
         'subproduto',
         'status',
+        'motivo_reprovacao',
+        'aprovado_por',
+        'aprovado_em',
+        'versao',
+        'dav_pai_id',
         'diarias_total', 
         'aereo_total', 
         'aquatico_total', 
@@ -34,5 +39,9 @@ class Dav extends Model
         return $this->belongsTo(Empreendimento::class, 'empreendimento_id');
     }
 
-    
+    public function aprovador()
+    {
+        return $this->belongsTo(User::class, 'aprovado_por');
+    }
+
 }

@@ -15,17 +15,60 @@ use App\Models\Dav;
 use App\Models\DavProfissionalDocumento;
 use App\Models\DavProfissionalTrecho;
 use App\Models\DavQuantidade;
+use App\Models\Subproduto;
 
 class DavController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $davs = Dav::withCount('profissionais')
+        $query = Dav::with('empreendimento');
+
+        if ($request->empreendimento_id) {
+            $query->where('empreendimento_id', $request->empreendimento_id);
+        }
+
+        if ($request->produto) {
+            $query->where('produto', $request->produto);
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $davs = $query
+            ->withCount('profissionais')
             ->orderByDesc('id')
-            ->get();
+            ->get()
+            ->groupBy(function ($dav) {
+                return $dav->dav_pai_id ?? $dav->id;
+            })
+            ->values();
+
+        $empreendimentos = Empreendimento::whereIn(
+            'id',
+            Dav::select('empreendimento_id')->distinct()
+        )->orderBy('cod_emp')->get(['id','cod_emp']);
+
+        $produtos = Dav::select('produto')
+            ->distinct()
+            ->orderBy('produto')
+            ->pluck('produto');
+
+        $status = Dav::select('status')
+            ->distinct()
+            ->orderBy('status')
+            ->pluck('status');
 
         return Inertia::render('Dav/Index', [
             'davs' => $davs,
+            'empreendimentos' => $empreendimentos,
+            'produtos' => $produtos,
+            'statusList' => $status,
+            'filtros' => $request->only([
+                'empreendimento_id',
+                'produto',
+                'status'
+            ]),
             'auth' => [
                 'user' => auth()->user()
             ]
@@ -63,11 +106,12 @@ class DavController extends Controller
             'produto' => 'required|string'
         ]);
 
-        $subprodutos = DB::table('subprodutos')
-            ->where('desc_dav', $request->produto)
-            ->selectRaw("DISTINCT CONCAT(subproduto, ' ', descricao_revisada) as nome")
+        $subprodutos = Subproduto::where('desc_dav', $request->produto)
             ->orderBy('subproduto')
-            ->pluck('nome');
+            ->get()
+            ->map(function ($item) {
+                return $item->subproduto . ' ' . $item->descricao_revisada;
+            });
 
         return response()->json($subprodutos);
     }
@@ -235,7 +279,25 @@ class DavController extends Controller
             'empreendimento'
         ]);
 
-        // CALCULAR TOTAIS DA DAV
+        // ===============================
+        // 🔎 CONTROLE DE VERSÃO
+        // ===============================
+
+        $raizId = $dav->dav_pai_id ?? $dav->id;
+
+        $ultimaDav = Dav::where(function ($q) use ($raizId) {
+                $q->where('id', $raizId)
+                ->orWhere('dav_pai_id', $raizId);
+            })
+            ->orderByDesc('versao')
+            ->first();
+
+        $isUltimaVersao = $dav->id === $ultimaDav->id;
+
+        // ===============================
+        // 📊 CALCULAR TOTAIS DA DAV
+        // ===============================
+
         $totalDiarias = 0;
         $totalAereo = 0;
         $totalAquatico = 0;
@@ -254,12 +316,15 @@ class DavController extends Controller
             }
         }
 
+        // ===============================
+        // 💰 BUSCAR SALDOS ATUAIS
+        // ===============================
 
-        // BUSCAR SALDOS ATUAIS
         $saldos = DavQuantidade::pluck('quantidade_atual', 'tipo');
 
         return Inertia::render('Dav/Show', [
             'dav' => $dav,
+            'isUltimaVersao' => $isUltimaVersao, // 👈 NOVO
             'resumo' => [
                 'totais' => [
                     'diarias' => $totalDiarias,
@@ -304,7 +369,8 @@ class DavController extends Controller
         $dav->load([
             'profissionais.profissional',
             'profissionais.trechos',
-            'empreendimento'
+            'empreendimento',
+            'aprovador'
         ]);
 
 
@@ -354,5 +420,366 @@ class DavController extends Controller
 
         return $pdf->download("DAV-{$dav->id}.pdf");
     }
+
+
+    public function aprovar(Dav $dav)
+    {
+        if (auth()->user()->role !== 'Fiscal') {
+            abort(403, 'Sem permissão.');
+        }
+
+        if ($dav->status !== 'Pendente') {
+            return back()->with('error', 'DAV já foi analisado.');
+        }
+
+        $dav->update([
+            'status' => 'Aprovado',
+            'aprovado_por' => auth()->id(),
+            'aprovado_em' => now(),
+        ]);
+
+        return back()->with('success', 'DAV aprovado com sucesso.');
+    }
+
+    public function reprovar(Request $request, Dav $dav)
+    {
+        if (auth()->user()->role !== 'Fiscal') {
+            abort(403);
+        }
+
+        if ($dav->status !== 'Pendente') {
+            return back()->with('error', 'DAV já foi analisado.');
+        }
+
+        $request->validate([
+            'motivo' => 'required|string|min:5'
+        ]);
+
+        $dav->update([
+            'status' => 'Reprovado',
+            'motivo_reprovacao' => $request->motivo
+        ]);
+
+        return back()->with('success', 'DAV reprovado com sucesso.');
+    }
+
+    public function retificar(Dav $dav)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            if ($dav->status !== 'Reprovado') {
+                return back()->with('error', 'Só é possível retificar DAV Reprovada.');
+            }
+
+            // Descobrir raiz
+            $raizId = $dav->dav_pai_id ?? $dav->id;
+
+            // Descobrir última versão do grupo
+            $ultimaDav = Dav::where(function ($q) use ($raizId) {
+                    $q->where('id', $raizId)
+                    ->orWhere('dav_pai_id', $raizId);
+                })
+                ->orderByDesc('versao')
+                ->first();
+
+            // 🔒 BLOQUEAR se não for a mais recente
+            if ($dav->id !== $ultimaDav->id) {
+                return back()->with('error', 'Só é permitido retificar a versão mais recente da DAV.');
+}
+
+            // Bloquear se já existir filha pendente
+            $existePendente = Dav::where(function ($q) use ($raizId) {
+                    $q->where('id', $raizId)
+                    ->orWhere('dav_pai_id', $raizId);
+                })
+                ->where('status', 'Pendente')
+                ->exists();
+
+            if ($existePendente) {
+                return back()->with('error', 'Já existe uma retificação pendente para esta DAV.');
+            }
+
+            // Carregar relações
+            $dav->load('profissionais.trechos');
+
+            // ===============================
+            // 1️⃣ DEVOLVER SALDO DA REPROVADA
+            // ===============================
+
+            $totalDiarias = 0;
+            $totalAereo = 0;
+            $totalAquatico = 0;
+            $totalHatch = 0;
+            $totalPickup = 0;
+
+            foreach ($dav->profissionais as $prof) {
+
+                $totalDiarias += $prof->diarias ?? 0;
+
+                foreach ($prof->trechos as $trecho) {
+                    $totalAereo += $trecho->aereo_qtd ?? 0;
+                    $totalAquatico += $trecho->aquatico_qtd ?? 0;
+                    $totalHatch += $trecho->terrestre_hatch_qtd ?? 0;
+                    $totalPickup += $trecho->terrestre_pickup_qtd ?? 0;
+                }
+            }
+
+            DavQuantidade::where('tipo','diarias')
+                ->increment('quantidade_atual', $totalDiarias);
+
+            DavQuantidade::where('tipo','passagem_aerea')
+                ->increment('quantidade_atual', $totalAereo);
+
+            DavQuantidade::where('tipo','veiculo_aquatico')
+                ->increment('quantidade_atual', $totalAquatico);
+
+            DavQuantidade::where('tipo','veiculo_hatch')
+                ->increment('quantidade_atual', $totalHatch);
+
+            DavQuantidade::where('tipo','veiculo_pickup')
+                ->increment('quantidade_atual', $totalPickup);
+
+            // ===============================
+            // 2️⃣ CALCULAR NOVA VERSÃO
+            // ===============================
+
+            $ultimaVersao = Dav::where(function ($q) use ($raizId) {
+                    $q->where('id', $raizId)
+                    ->orWhere('dav_pai_id', $raizId);
+                })
+                ->max('versao');
+
+            $novaVersao = $ultimaVersao + 1;
+
+            // ===============================
+            // 3️⃣ CRIAR NOVA DAV
+            // ===============================
+
+            $novaDav = Dav::create([
+                'coordenador' => $dav->coordenador,
+                'empreendimento_id' => $dav->empreendimento_id,
+                'n_ose' => $dav->n_ose,
+                'produto' => $dav->produto,
+                'subproduto' => $dav->subproduto,
+                'versao' => $novaVersao,
+                'dav_pai_id' => $raizId,
+                'status' => 'Pendente',
+                'motivo_reprovacao' => null,
+                'aprovado_por' => null,
+                'aprovado_em' => null,
+            ]);
+
+            // ===============================
+            // 4️⃣ COPIAR PROFISSIONAIS
+            // ===============================
+
+            foreach ($dav->profissionais as $prof) {
+
+                $novoProf = DavProfissionalDocumento::create([
+                    'dav_id' => $novaDav->id,
+                    'profissional_id' => $prof->profissional_id,
+                    'funcao' => $prof->funcao,
+                    'data_ini' => $prof->data_ini,
+                    'data_fim' => $prof->data_fim,
+                    'diarias' => $prof->diarias,
+                ]);
+
+                foreach ($prof->trechos as $trecho) {
+
+                    DavProfissionalTrecho::create([
+                        'dav_profissional_documento_id' => $novoProf->id,
+                        'origem' => $trecho->origem,
+                        'destino' => $trecho->destino,
+                        'aereo_qtd' => $trecho->aereo_qtd,
+                        'aquatico_qtd' => $trecho->aquatico_qtd,
+                        'terrestre_pickup_qtd' => $trecho->terrestre_pickup_qtd,
+                        'terrestre_hatch_qtd' => $trecho->terrestre_hatch_qtd,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('dav.edit', $novaDav->id)
+                ->with('success', 'Retificação criada. Atualize e envie novamente.');
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->withErrors($e->getMessage());
+        }
+    }
+
+    public function edit(Dav $dav)
+    {
+        if ($dav->status !== 'Pendente') {
+            return back()->with('error', 'Só é possível editar DAV pendente.');
+        }
+
+        $dav->load([
+            'profissionais.trechos',
+            'empreendimento'
+        ]);
+
+        $empreendimentos = Empreendimento::orderBy('cod_emp')
+            ->get(['id', 'cod_emp', 'ose_emp']);
+
+        $produtos = DB::table('subprodutos')
+            ->select('desc_dav')
+            ->whereNotNull('desc_dav')
+            ->distinct()
+            ->orderBy('desc_dav')
+            ->pluck('desc_dav');
+
+        $profissionais = DavProfissionais::orderBy('nome')
+            ->get(['id', 'nome', 'formacao']);
+
+        return Inertia::render('Dav/Edit', [
+            'dav' => $dav,
+            'empreendimentos' => $empreendimentos,
+            'produtos' => $produtos,
+            'profissionais' => $profissionais,
+            'auth' => [
+                'user' => auth()->user()
+            ]
+        ]);
+    }
+
+    public function update(Request $request, Dav $dav)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            if ($dav->status !== 'Pendente') {
+                return back()->with('error', 'Só é possível atualizar DAV pendente.');
+            }
+
+            // ===============================
+            // 1️⃣ Atualizar dados principais
+            // ===============================
+
+            $dav->update([
+                'coordenador' => $request->coordenador,
+                'empreendimento_id' => $request->empreendimento_id,
+                'n_ose' => $request->ose,
+                'produto' => $request->produto,
+                'subproduto' => $request->subproduto,
+            ]);
+
+            // ===============================
+            // 2️⃣ Apagar vínculos antigos
+            // ===============================
+
+            foreach ($dav->profissionais as $prof) {
+                $prof->trechos()->delete();
+                $prof->delete();
+            }
+
+            // ===============================
+            // 3️⃣ Recriar profissionais e trechos
+            // ===============================
+
+            foreach ($request->profissionais as $item) {
+
+                $profissionalDocumento = DavProfissionalDocumento::create([
+                    'dav_id' => $dav->id,
+                    'profissional_id' => $item['profissional_id'],
+                    'funcao' => $item['funcao'],
+                    'data_ini' => $item['data_ini'],
+                    'data_fim' => $item['data_fim'],
+                    'diarias' => $item['diarias'] ?? 0,
+                ]);
+
+                if (!empty($item['trechos'])) {
+
+                    foreach ($item['trechos'] as $trecho) {
+
+                        DavProfissionalTrecho::create([
+                            'dav_profissional_documento_id' => $profissionalDocumento->id,
+                            'origem' => $trecho['origem'],
+                            'destino' => $trecho['destino'],
+                            'aereo_qtd' => $trecho['aereo_qtd'] ?? 0,
+                            'aquatico_qtd' => $trecho['aquatico_qtd'] ?? 0,
+                            'terrestre_pickup_qtd' => $trecho['terrestre_pickup_qtd'] ?? 0,
+                            'terrestre_hatch_qtd' => $trecho['terrestre_hatch_qtd'] ?? 0,
+                        ]);
+                    }
+                }
+            }
+
+            // ===============================
+            // 4️⃣ Recalcular totais
+            // ===============================
+
+            $dav->load('profissionais.trechos');
+
+            $totalDiarias = 0;
+            $totalAereo = 0;
+            $totalAquatico = 0;
+            $totalHatch = 0;
+            $totalPickup = 0;
+
+            foreach ($dav->profissionais as $prof) {
+
+                $totalDiarias += $prof->diarias ?? 0;
+
+                foreach ($prof->trechos as $trecho) {
+                    $totalAereo += $trecho->aereo_qtd ?? 0;
+                    $totalAquatico += $trecho->aquatico_qtd ?? 0;
+                    $totalHatch += $trecho->terrestre_hatch_qtd ?? 0;
+                    $totalPickup += $trecho->terrestre_pickup_qtd ?? 0;
+                }
+            }
+
+            // ===============================
+            // 5️⃣ Descontar novamente
+            // ===============================
+
+            DavQuantidade::where('tipo','diarias')
+                ->decrement('quantidade_atual', $totalDiarias);
+
+            DavQuantidade::where('tipo','passagem_aerea')
+                ->decrement('quantidade_atual', $totalAereo);
+
+            DavQuantidade::where('tipo','veiculo_aquatico')
+                ->decrement('quantidade_atual', $totalAquatico);
+
+            DavQuantidade::where('tipo','veiculo_hatch')
+                ->decrement('quantidade_atual', $totalHatch);
+
+            DavQuantidade::where('tipo','veiculo_pickup')
+                ->decrement('quantidade_atual', $totalPickup);
+
+            // ===============================
+            // 6️⃣ Atualizar snapshot
+            // ===============================
+
+            $saldos = DavQuantidade::pluck('quantidade_atual', 'tipo');
+
+            $dav->update([
+                'diarias_total' => $saldos['diarias'] ?? 0,
+                'aereo_total' => $saldos['passagem_aerea'] ?? 0,
+                'aquatico_total' => $saldos['veiculo_aquatico'] ?? 0,
+                'hatch_total' => $saldos['veiculo_hatch'] ?? 0,
+                'pickup_total' => $saldos['veiculo_pickup'] ?? 0,
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('dav.show', $dav->id)
+                ->with('success', 'DAV atualizada com sucesso.');
+
+        } catch (\Exception $e) {
+
+            DB::rollBack();
+
+            return back()->withErrors($e->getMessage());
+        }
+    }
+    
 
 }

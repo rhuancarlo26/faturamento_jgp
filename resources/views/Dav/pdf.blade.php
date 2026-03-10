@@ -412,11 +412,27 @@
              <!-- ASSINATURA 2 -->
             <td width="50%" style="text-align:left; vertical-align:top; padding-left:40px;">
 
-                {{-- ESPAÇO RESERVADO PARA ASSINATURA FUTURA --}}
-                <div style="height:45px; margin-bottom:-20px;"></div>
+            {{-- ESPAÇO RESERVADO PARA TEXTO DE APROVAÇÃO --}}
+            <div style="height:25px; position:relative;">
 
-                {{-- LINHA --}}
-                <div style="border-top:1px solid #000; width:220px; margin-bottom:6px;"></div>
+                @if($dav->status === 'Aprovado')
+                    <div style="
+                        position:absolute;
+                        bottom:0;
+                        left:0;
+                        right:0;
+                        font-size:11px;
+                        line-height:12px;
+                    ">
+                        Aprovado via sistema pelo usuário {{ $dav->aprovador->name }}<br>
+                        em {{ \Carbon\Carbon::parse($dav->aprovado_em)->format('d/m/Y H:i') }}
+                    </div>
+                @endif
+
+            </div>
+
+            {{-- LINHA --}}
+            <div style="border-top:1px solid #000; width:220px; margin-bottom:6px;"></div>
                 
                 <div style="font-weight:bold;">
                     Douglas Freitas de Almeida Filho

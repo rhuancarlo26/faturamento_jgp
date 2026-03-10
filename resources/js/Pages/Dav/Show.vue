@@ -1,13 +1,16 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { router, usePage } from '@inertiajs/vue3'
 
 const props = defineProps({
-  user: Object,
   dav: Object,
   resumo: Object,
-
+  isUltimaVersao: Boolean
 })
+
+const page = usePage()
+const auth = page.props.auth
 
 const statusClass = computed(() => {
   if (props.dav.status === 'Pendente') return 'bg-warning'
@@ -28,6 +31,47 @@ function saldoClass(valor) {
     return 'text-gray-800'
 }
 
+const mostrarModalAprovacao = ref(false)
+const davAprovacaoId = ref(null)
+
+function abrirModalAprovacao(id) {
+  davAprovacaoId.value = id
+  mostrarModalAprovacao.value = true
+}
+
+function confirmarAprovacao() {
+  router.patch(`/dav/${davAprovacaoId.value}/aprovar`)
+  mostrarModalAprovacao.value = false
+}
+
+const mostrarModal = ref(false)
+const motivoReprovacao = ref('')
+const davSelecionado = ref(null)
+
+function abrirModalReprovacao(id) {
+  davSelecionado.value = id
+  motivoReprovacao.value = ''
+  mostrarModal.value = true
+}
+
+function confirmarReprovacao() {
+
+  if (!motivoReprovacao.value.trim()) {
+    alert('Informe o motivo da reprovação.')
+    return
+  }
+
+  router.patch(`/dav/${davSelecionado.value}/reprovar`, {
+    motivo: motivoReprovacao.value
+  })
+
+  mostrarModal.value = false
+}
+
+function retificarDav(id) {
+  router.post(`/dav/${id}/retificar`)
+}
+
 </script>
 
 <template>
@@ -35,6 +79,30 @@ function saldoClass(valor) {
 
     <div class="document-wrapper">
       <div class="document">
+
+        <div 
+          v-if="dav.status === 'Reprovado' 
+                && auth.user.role !== 'Fiscal'
+                && isUltimaVersao"
+          >
+
+          <button 
+            class="btn btn-primary"
+            @click="retificarDav(dav.id)"
+          >
+            Retificar DAV
+          </button>
+        </div>
+
+        <div v-if="dav.status === 'Reprovado'" class="mt-3">
+          <div class="section signature2">
+          
+            <strong>Motivo da reprovação:</strong>
+            <div style="margin-top:5px;">
+              {{ dav.motivo_reprovacao }}
+            </div>
+          </div>
+        </div>
 
         <!-- CABEÇALHO -->
         <div class="doc-header">
@@ -277,19 +345,80 @@ function saldoClass(valor) {
           </div>
         </div>
 
-        <!-- ASSINATURA -->
-        <div class="section signature">
+        <div class="data-emissao">
+          <strong>Data de Emissão:</strong>
+          {{ formatDate(dav.created_at) }}
+        </div>
 
-          <div class="assinatura-bloco">
-            <div class="signature-line"></div>
-            <div>Assinatura do Responsável</div>
+        
+        <div v-if="auth.user.role === 'Fiscal' && dav.status === 'Pendente'">
+          <div class="section signature">
+
+            <button class="btn btn-success me-2"
+                    @click="abrirModalAprovacao(dav.id)">
+              Aprovar
+            </button>
+
+            <button class="btn btn-danger"
+                    @click="abrirModalReprovacao(dav.id)">
+              Reprovar
+            </button>
+
           </div>
 
-          <div class="data-emissao">
-            <strong>Data de Emissão:</strong>
-            {{ formatDate(dav.created_at) }}
-          </div>
+        </div>
 
+        <div v-if="mostrarModal" class="modal-backdrop-custom">
+          <div class="modal-box">
+
+            <h5 class="mb-3" style="text-align: center;">Motivo da Reprovação</h5>
+
+            <textarea
+              v-model="motivoReprovacao"
+              class="form-control mb-3"
+              rows="4"
+              placeholder="Descreva o motivo..."
+            ></textarea>
+
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-secondary"
+                      @click="mostrarModal = false">
+                Cancelar
+              </button>
+
+              <button class="btn btn-success"
+                      @click="confirmarReprovacao">
+                Confirmar
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <div v-if="mostrarModalAprovacao" class="modal-backdrop-custom">
+          <div class="modal-box">
+
+            <h5 class="mb-3" style="text-align: center;">
+              Confirmar Aprovação
+            </h5>
+
+            <p class="mb-4">
+              Tem certeza que deseja <strong>aprovar</strong> este DAV?
+            </p>
+
+            <div class="d-flex justify-content-end gap-2">
+              <button class="btn btn-secondary"
+                      @click="mostrarModalAprovacao = false">
+                Cancelar
+              </button>
+
+              <button class="btn btn-success"
+                      @click="confirmarAprovacao">
+                Confirmar
+              </button>
+            </div>
+
+          </div>
         </div>
 
       </div>
@@ -465,6 +594,7 @@ function saldoClass(valor) {
 
 .data-emissao {
   font-size: 13px;
+  text-align: center;
   color: #444;
 }
 
@@ -609,6 +739,40 @@ function saldoClass(valor) {
   font-weight: 600;
   color: #555;
   text-align: center;
+}
+
+.modal-backdrop-custom {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.modal-box {
+  background: white;
+  padding: 25px;
+  width: 800px;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+}
+
+/* motivo da reclamação */
+.signature2 {
+  margin-top: 10px;
+  text-align: center;
+  background: white;
+}
+
+.signature2-line {
+  border-top: 1px solid #000;
+  width: 300px;
+  margin: 0 auto 8px;
 }
 
 </style>
