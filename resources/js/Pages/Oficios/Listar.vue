@@ -1,9 +1,9 @@
 <script setup>
-import { ref, onMounted, watch, defineProps } from 'vue';
+import { ref, onMounted, watch, defineProps, computed } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
-import { saveAs } from 'file-saver'; 
+import { saveAs } from 'file-saver';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 
 defineProps({
@@ -27,6 +27,29 @@ const formEditar = ref({
     texto_oficio: '',
     oficio_sede: false,
     oficio_dnit: false
+});
+
+const filtroAutor = ref('');
+
+const autores = computed(() => {
+    const autoresUnicos = new Map();
+
+    oficios.value.forEach((oficio) => {
+        if (oficio.autor && oficio.autor_nome) {
+            autoresUnicos.set(oficio.autor, oficio.autor_nome);
+        }
+    });
+
+    return Array.from(autoresUnicos, ([id, nome]) => ({ id, nome }))
+        .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+});
+
+const oficiosFiltrados = computed(() => {
+    if (!filtroAutor.value) {
+        return oficios.value;
+    }
+
+    return oficios.value.filter((oficio) => String(oficio.autor) === String(filtroAutor.value));
 });
 
 const abrirModalEditar = (oficio) => {
@@ -58,7 +81,7 @@ const salvarEdicao = async () => {
         if (!response.ok) throw new Error("Erro ao atualizar");
 
         modalEditar.value = false;
-        carregarOficios(); // recarrega tabela
+        carregarOficios();
     } catch (error) {
         alert("Erro ao salvar.");
         console.error(error);
@@ -81,8 +104,6 @@ const enviarArquivoPersonalizado = async () => {
 
     try {
         const response = await fetch(`/oficios/${oficioUpload.value.id}/upload-final`, {
-
-
             method: "POST",
             headers: {
                 "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content
@@ -93,7 +114,7 @@ const enviarArquivoPersonalizado = async () => {
         if (!response.ok) throw new Error("Erro ao enviar arquivo.");
 
         modalUpload.value = false;
-        carregarOficios(); // atualizar tabela
+        carregarOficios();
 
     } catch (error) {
         alert("Erro ao enviar arquivo.");
@@ -101,8 +122,6 @@ const enviarArquivoPersonalizado = async () => {
     }
 };
 
-
-// 📌 Carregar ofícios
 const carregarOficios = async () => {
     try {
         carregando.value = true;
@@ -120,40 +139,32 @@ const carregarOficios = async () => {
     }
 };
 
-// 🔹 Modelo de ofício por usuário
 const modelosPorUsuario = {
-    4: '/Bruno_Modelo_Oficio_Placeholders.docx',     // Bruno
-    5: '/Elenito_Modelo_Oficio_Placeholders.docx',   // Elenito
-    6: '/Vinicius_Modelo_Oficio_Placeholders.docx',  // Vinícius
-    8: '/Barco_Modelo_Oficio_Placeholders.docx',     // Guilherme Barco
-    9: "/Juan_Modelo_Oficio_Placeholders.docx",     // Michelle Menezes
-    10: "/Adriana_Modelo_Oficio_Placeholders.docx", // Adriana
+    4: '/Bruno_Modelo_Oficio_Placeholders.docx',
+    5: '/Elenito_Modelo_Oficio_Placeholders.docx',
+    6: '/Vinicius_Modelo_Oficio_Placeholders.docx',
+    8: '/Barco_Modelo_Oficio_Placeholders.docx',
+    9: "/Juan_Modelo_Oficio_Placeholders.docx",
+    10: "/Adriana_Modelo_Oficio_Placeholders.docx",
 };
 
-// 🔹 Modelo padrão (fallback)
-const modeloPadrao = '/Modelo_Oficios_Placeholders.docx';
+const modeloPadrao = '/Modelo_Oficio_Placeholders.docx';
 
-
-// 📌 BAIXAR DOCX DIRETO DA LISTAGEM
 const baixarOficio = async (oficio) => {
     try {
-        // 🔹 Escolher modelo com base no AUTOR do ofício
         const modelo = modelosPorUsuario[oficio.autor] ?? modeloPadrao;
 
-        // 1. Busca o modelo certo
         const response = await fetch(modelo);
         if (!response.ok) throw new Error('Modelo não encontrado');
         const arrayBuffer = await response.arrayBuffer();
         const zip = new PizZip(arrayBuffer);
 
-        // 2. Cria o documento
         const doc = new Docxtemplater(zip, {
             paragraphLoop: true,
             linebreaks: true,
             delimiters: { start: '[[', end: ']]' },
         });
 
-        // 3. Dados do ofício
         const dataExtenso = new Date(oficio.data_registro).toLocaleDateString('pt-BR', {
             day: 'numeric',
             month: 'long',
@@ -195,7 +206,6 @@ const baixarOficio = async (oficio) => {
 
         doc.render();
 
-        // 4. Gera o blob
         const blob = doc.getZip().generate({
             type: "blob",
             mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -210,13 +220,10 @@ const baixarOficio = async (oficio) => {
     }
 };
 
-
 const baixar = (oficio) => {
     if (oficio.arquivo_personalizado && oficio.arquivo_personalizado !== "") {
-        // Tem arquivo enviado → baixa do backend
         window.location.href = `/oficios/${oficio.id}/download`;
     } else {
-        // Não tem arquivo → gera no front usando docxtemplater
         baixarOficio(oficio);
     }
 };
@@ -234,7 +241,6 @@ const removerArquivo = async () => {
 
         if (!response.ok) throw new Error("Erro ao remover arquivo.");
 
-        // atualizar tabela
         modalUpload.value = false;
         carregarOficios();
 
@@ -244,7 +250,6 @@ const removerArquivo = async () => {
     }
 };
 
-
 onMounted(() => {
     carregarOficios();
 });
@@ -253,7 +258,11 @@ watch(filtroRodovia, () => {
     carregarOficios();
 });
 
-// 📌 Novo ofício
+const limparFiltros = () => {
+    filtroRodovia.value = '';
+    filtroAutor.value = '';
+};
+
 const novoOficio = () => {
     Inertia.visit('/oficios');
 };
@@ -266,157 +275,156 @@ const logout = () => {
 
 <template>
     <AuthenticatedLayout :user="user">
-    <div class="min-vh-100 bg-light">
-        <!-- Conteúdo principal -->
-        <div class="flex-grow-1 p-4">
-            <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1900px;">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h3 class="font-weight-bold text-dark m-0">Ofícios Cadastrados</h3>
-                    <button class="btn btn-primary" @click="novoOficio">
-                        Novo Ofício
+        <div class="container-fluid bg-white rounded-lg shadow p-4" style="max-width: 1900px;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3 class="font-weight-bold text-dark m-0">Ofícios Cadastrados</h3>
+                <button class="btn btn-primary" @click="novoOficio">
+                    Novo Ofício
+                </button>
+            </div>
+
+            <!-- Alerta -->
+            <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
+                {{ flashSuccess }}
+                <button type="button" class="close" @click="flashSuccess = null" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+
+            <!-- Filtros -->
+            <div class="row mb-4 align-items-end">
+                <div class="col-md-4 mb-3">
+                    <label for="filtroRodovia" class="font-weight-semibold text-dark">
+                        Filtrar por BR
+                    </label>
+                    <select v-model="filtroRodovia" id="filtroRodovia" class="form-control custom-select">
+                        <option value="">Todas as rodovias</option>
+                        <option value="CT-94-2022">CT-94-2022</option>
+                        <option value="BR-230/MA">BR-230/MA</option>
+                        <option value="BR-437 CE/RN">BR-437 CE/RN</option>
+                        <option value="BR-402 MA/PI">BR-402 MA/PI</option>
+                        <option value="BR-116 CE">BR-116 CE</option>
+                        <option value="BR-020 GO/BA">BR-020 GO/BA</option>
+                        <option value="BR-304 RN">BR-304 RN</option>
+                        <option value="BR-316 PI">BR-316 PI</option>
+                        <option value="BR-104 RN">BR-104 RN</option>
+                        <option value="BR-030 BA">BR-030 BA</option>
+                        <option value="BR-122 BA">BR-122 BA</option>
+                        <option value="BR-316 PI (km 33,54 ao km 55,60)">BR-316 PI (km 33,54 ao km 55,60)</option>
+                        <option value="BR-110/316/PE">BR-110/316/PE</option>
+                        <option value="BR-349/SE/AL">BR-349/SE/AL</option>
+                        <option value="BR-135/BA">BR-135/BA</option>
+                        <option value="BR-324/BA">BR-324/BA</option>
+                        <option value="BR-316/MA">BR-316/MA</option>
+                        <option value="BR-226/CE">BR-226/CE</option>
+                        <option value="BR-010/MA">BR-010/MA</option>
+                        <option value="BR-104/AL">BR-104/AL</option>
+                        <option value="BR-222/CE">BR-222/CE</option>
+                        <option value="BR-423, BR-424, BR-316 PE/AL">BR-423, BR-424, BR-316 PE/AL</option>
+                        <option value="BR-232 PE">BR-232 PE</option>
+                        <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
+                        <option value="BR-230 PI/CE">BR-230 PI/CE</option>
+                        <option value="BR-235/SE">BR-235/SE</option>
+                    </select>
+                </div>
+
+                <div class="col-md-4 mb-3">
+                    <label for="filtroAutor" class="font-weight-semibold text-dark">
+                        Filtrar por autor
+                    </label>
+                    <select v-model="filtroAutor" id="filtroAutor" class="form-control custom-select">
+                        <option value="">Todos os autores</option>
+                        <option v-for="autor in autores" :key="autor.id" :value="autor.id">
+                            {{ autor.nome }}
+                        </option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3">
+                    <button class="btn btn-outline-secondary w-100" @click="limparFiltros">
+                        <i class="fas fa-eraser mr-2"></i>
+                        Limpar filtros
                     </button>
-                </div>
-
-                <!-- Alerta -->
-                <div v-if="flashSuccess" class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ flashSuccess }}
-                    <button type="button" class="close" @click="flashSuccess = null" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-
-                <!-- Filtro -->
-                <div class="row mb-4">
-                    <div class="col-md-4">
-                        <label for="filtroRodovia" class="font-weight-semibold text-dark">Filtrar por BR</label>
-                        <select v-model="filtroRodovia" id="filtroRodovia" class="form-control custom-select">
-                            <option value="">Todas as rodovias</option>
-                            <option value="CT-94-2022">CT-94-2022</option>
-                            <option value="BR-230/MA">BR-230/MA</option>
-                            <option value="BR-437 CE/RN">BR-437 CE/RN</option>
-                            <option value="BR-402 MA/PI">BR-402 MA/PI</option>
-                            <option value="BR-116 CE">BR-116 CE</option>
-                            <option value="BR-020 GO/BA">BR-020 GO/BA</option>
-                            <option value="BR-304 RN">BR-304 RN</option>
-                            <option value="BR-316 PI">BR-316 PI</option>
-                            <option value="BR-104 RN">BR-104 RN</option>
-                            <option value="BR-030 BA">BR-030 BA</option>
-                            <option value="BR-122 BA">BR-122 BA</option>
-                            <option value="BR-316 PI (km 33,54 ao km 55,60)">BR-316 PI (km 33,54 ao km 55,60)</option>
-                            <option value="BR-110/316/PE">BR-110/316/PE</option>
-                            <option value="BR-349/SE/AL">BR-349/SE/AL</option>
-                            <option value="BR-135/BA">BR-135/BA</option>
-                            <option value="BR-324/BA">BR-324/BA</option>
-                            <option value="BR-316/MA">BR-316/MA</option>
-                            <option value="BR-226/CE">BR-226/CE</option>
-                            <option value="BR-010/MA">BR-010/MA</option>
-                            <option value="BR-104/AL">BR-104/AL</option>
-                            <option value="BR-222/CE">BR-222/CE</option>
-                            <option value="BR-423, BR-424, BR-316 PE/AL">BR-423, BR-424, BR-316 PE/AL</option>
-                            <option value="BR-232 PE">BR-232 PE</option>
-                            <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
-                            <option value="BR-230 PI/CE">BR-230 PI/CE</option>
-                            <option value="BR-235/SE">BR-235/SE</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Loader -->
-                <div v-if="carregando" class="text-center py-4">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="sr-only">Carregando...</span>
-                    </div>
-                </div>
-
-                <!-- Tabela -->
-                <div v-else>
-                    <table class="table table-bordered table-hover">
-                        <thead class="thead-light">
-                            <tr>
-                                <th style="width: 80px;">#</th>
-                                <th>Ofício nº</th>
-                                <th>Rodovia</th>
-                                <th>Assunto</th>
-                                <th>Data</th>
-                                <th>Autor</th>
-                                <th style="width: 120px;">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="oficios.length === 0">
-                                <td colspan="6" class="text-center text-muted">Nenhum ofício encontrado</td>
-                            </tr>
-                            <tr v-for="(oficio, index) in oficios" :key="oficio.id">
-                                <td>{{ index + 1 }}</td>
-                                <td>{{ oficio.oficio_num }}</td>
-                                <td>{{ oficio.rodovia }}</td>
-                                <td>{{ oficio.assunto }}</td>
-                                <td>{{ new Date(oficio.data_registro).toLocaleDateString('pt-BR') }}</td>
-                                <td>{{ oficio.autor_nome }}</td>
-                                <td class="text-center">
-                                    <button 
-                                        @click="baixar(oficio)"
-                                        class="btn btn-sm"
-                                        style="color: white; background-color: #28a745;"
-                                        title="Baixar"
-                                    >
-                                        <i class="fas fa-download"></i>
-                                    </button>
-
-                                    <button
-                                        v-if="oficio.autor === user.id"
-                                        @click="abrirModalEditar(oficio)"
-                                        class="btn btn-sm"
-                                        style="color: white; background-color: #f0ad4e;"
-                                        title="Editar"
-                                    >
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-
-                                    <button 
-                                        v-if="oficio.autor === user.id"
-                                        @click="abrirUpload(oficio)"
-                                        class="btn btn-sm"
-                                        style="color: white; background-color: #6f42c1;"
-                                        title="Enviar arquivo personalizado"
-                                    >
-                                        <i class="fas fa-file-upload"></i>
-                                    </button>
-
-                                </td>
-
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
+
+            <!-- Loader -->
+            <div v-if="carregando" class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Carregando...</span>
+                </div>
+            </div>
+
+            <!-- Tabela -->
+            <div v-else>
+                <table class="table table-bordered table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th style="width: 80px;">#</th>
+                            <th>Ofício nº</th>
+                            <th>Rodovia</th>
+                            <th>Assunto</th>
+                            <th>Data</th>
+                            <th>Autor</th>
+                            <th style="width: 120px;">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="oficiosFiltrados.length === 0">
+                            <td colspan="7" class="text-center text-muted">Nenhum ofício encontrado</td>
+                        </tr>
+                        <tr v-for="(oficio, index) in oficiosFiltrados" :key="oficio.id">
+                            <td>{{ index + 1 }}</td>
+                            <td>{{ oficio.oficio_num }}</td>
+                            <td>{{ oficio.rodovia }}</td>
+                            <td>{{ oficio.assunto }}</td>
+                            <td>{{ new Date(oficio.data_registro).toLocaleDateString('pt-BR') }}</td>
+                            <td>{{ oficio.autor_nome }}</td>
+                            <td class="text-center">
+                                <button 
+                                    @click="baixar(oficio)"
+                                    class="btn btn-sm btn-success mr-1"
+                                    title="Baixar"
+                                >
+                                    <i class="fas fa-download"></i>
+                                </button>
+
+                                <button
+                                    v-if="oficio.autor === user.id"
+                                    @click="abrirModalEditar(oficio)"
+                                    class="btn btn-sm btn-warning mr-1"
+                                    title="Editar"
+                                >
+                                    <i class="fas fa-edit"></i>
+                                </button>
+
+                                <button 
+                                    v-if="oficio.autor === user.id"
+                                    @click="abrirUpload(oficio)"
+                                    class="btn btn-sm btn-purple"
+                                    title="Enviar arquivo personalizado"
+                                >
+                                    <i class="fas fa-file-upload"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-       
+
         <!-- MODAL EDITAR -->
-        <div
-            class="modal fade"
-            :class="{ show: modalEditar }"
-            v-show="modalEditar"
-            style="display: block;"
-            tabindex="-1"
-            role="dialog"
-        >
+        <div class="modal fade" :class="{ show: modalEditar }" v-show="modalEditar" style="display: block;" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
                 <div class="modal-content">
-                <div class="modal-header" 
-                    style="background-color: #4b79a1; color: white; justify-content: center;">
-
-                    <h5 class="modal-title m-0">EDITAR OFÍCIO</h5>
-
-                    <button type="button" class="close position-absolute" style="right: 15px; color:white;"
-                        @click="modalEditar = false">
-                        &times;
-                    </button>
-                </div>
-
+                    <div class="modal-header" style="background-color: #4b79a1; color: white; justify-content: center;">
+                        <h5 class="modal-title m-0">EDITAR OFÍCIO</h5>
+                        <button type="button" class="close position-absolute" style="right: 15px; color:white;" @click="modalEditar = false">
+                            &times;
+                        </button>
+                    </div>
 
                     <div class="modal-body">
-                        <!-- Rodovia -->
                         <div class="form-group">
                             <label class="font-weight-bold">Rodovia</label>
                             <select v-model="formEditar.rodovia" class="form-control">
@@ -432,9 +440,7 @@ const logout = () => {
                                 <option value="BR-104 RN">BR-104 RN</option>
                                 <option value="BR-030 BA">BR-030 BA</option>
                                 <option value="BR-122 BA">BR-122 BA</option>
-                                <option value="BR-316 PI (km 33,54 ao km 55,60)">
-                                    BR-316 PI (km 33,54 ao km 55,60)
-                                </option>
+                                <option value="BR-316 PI (km 33,54 ao km 55,60)">BR-316 PI (km 33,54 ao km 55,60)</option>
                                 <option value="BR-110/316/PE">BR-110/316/PE</option>
                                 <option value="BR-349/SE/AL">BR-349/SE/AL</option>
                                 <option value="BR-135/BA">BR-135/BA</option>
@@ -452,37 +458,23 @@ const logout = () => {
                             </select>
                         </div>
 
-                        <!-- Assunto -->
                         <div class="form-group">
                             <label class="font-weight-bold">Assunto</label>
-                            <textarea rows="6" v-model="formEditar.assunto" class="form-control" ></textarea>
+                            <textarea rows="6" v-model="formEditar.assunto" class="form-control"></textarea>
                         </div>
 
-                        <!-- Texto -->
                         <div class="form-group">
                             <label class="font-weight-bold">Texto do Ofício</label>
                             <textarea rows="6" v-model="formEditar.texto_oficio" class="form-control"></textarea>
                         </div>
 
-                        <!-- SEDE / DNIT -->
                         <div class="form-group d-flex">
                             <div class="custom-control custom-checkbox mr-4">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    id="editOficioSede"
-                                    v-model="formEditar.oficio_sede"
-                                />
+                                <input type="checkbox" class="custom-control-input" id="editOficioSede" v-model="formEditar.oficio_sede" />
                                 <label class="custom-control-label" for="editOficioSede">Ofício SEDE</label>
                             </div>
-
                             <div class="custom-control custom-checkbox">
-                                <input
-                                    type="checkbox"
-                                    class="custom-control-input"
-                                    id="editOficioDnit"
-                                    v-model="formEditar.oficio_dnit"
-                                />
+                                <input type="checkbox" class="custom-control-input" id="editOficioDnit" v-model="formEditar.oficio_dnit" />
                                 <label class="custom-control-label" for="editOficioDnit">Ofício DNIT</label>
                             </div>
                         </div>
@@ -495,19 +487,12 @@ const logout = () => {
                 </div>
             </div>
         </div>
-        <!-- backdrop do modal -->
         <div class="modal-backdrop fade show" v-if="modalEditar"></div>
 
         <!-- MODAL UPLOAD -->
-        <div 
-            class="modal fade" 
-            :class="{ show: modalUpload }" 
-            v-show="modalUpload"
-            style="display:block;"
-        >
-            <div class="modal-dialog modal-md modal-dialog-centered"> <!-- AUMENTEI DE modal-sm → modal-md -->
+        <div class="modal fade" :class="{ show: modalUpload }" v-show="modalUpload" style="display:block;">
+            <div class="modal-dialog modal-md modal-dialog-centered">
                 <div class="modal-content">
-
                     <div class="modal-header" style="background:#6f42c1; color:white; justify-content:center;">
                         <h5 class="modal-title m-0">Enviar Word</h5>
                         <button type="button" class="close" style="color:white;" @click="modalUpload = false">
@@ -516,12 +501,8 @@ const logout = () => {
                     </div>
 
                     <div class="modal-body">
-
-                        <!-- SE EXISTE ARQUIVO MOSTRA A LIXEIRA -->
-                        <div v-if="oficioUpload?.arquivo_personalizado" 
-                            class="alert alert-info d-flex justify-content-between align-items-center">
+                        <div v-if="oficioUpload?.arquivo_personalizado" class="alert alert-info d-flex justify-content-between align-items-center">
                             <span>Já existe um arquivo enviado.</span>
-
                             <button class="btn btn-danger btn-sm" @click="removerArquivo">
                                 <i class="fas fa-trash"></i>
                             </button>
@@ -535,16 +516,22 @@ const logout = () => {
                         <button class="btn btn-secondary btn-sm" @click="modalUpload = false">Cancelar</button>
                         <button class="btn btn-primary btn-sm" @click="enviarArquivoPersonalizado">Enviar</button>
                     </div>
-
                 </div>
             </div>
         </div>
-
         <div class="modal-backdrop fade show" v-if="modalUpload"></div>
-
-    </div>
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.btn-purple {
+    color: white;
+    background-color: #6f42c1;
+}
+.btn-purple:hover {
+    background-color: #5a32a3;
+}
+</style>
 
 <style>
 @import 'https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css';
@@ -562,20 +549,5 @@ thead.thead-light th {
     appearance: none;
     background-position: right 0.75rem center;
     background-size: 16px 12px;
-}
-
-.btn-outline-primary {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-color: #007bff;
-    color: #007bff;
-}
-.btn-outline-primary:hover {
-    background-color: #007bff;
-    color: white;
-}
-.btn-outline-primary i {
-    font-size: 1rem;
 }
 </style>

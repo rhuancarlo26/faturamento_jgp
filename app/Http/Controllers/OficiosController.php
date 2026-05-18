@@ -214,6 +214,11 @@ class OficiosController extends Controller
             abort(404, 'Ofício não encontrado.');
         }
 
+        // 🔹 HEADERS ANTI-CACHE
+        header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+
         // 🔹 1) SE EXISTIR ARQUIVO PERSONALIZADO, BAIXAR ELE
         if (!empty($oficio->arquivo_personalizado)) {
             $caminho = storage_path('app/public/' . $oficio->arquivo_personalizado);

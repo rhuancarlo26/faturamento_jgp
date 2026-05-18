@@ -16,6 +16,9 @@ use App\Models\DavProfissionalDocumento;
 use App\Models\DavProfissionalTrecho;
 use App\Models\DavQuantidade;
 use App\Models\Subproduto;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\DavStatusMail;
+use App\Models\User;
 
 class DavController extends Controller
 {
@@ -259,6 +262,17 @@ class DavController extends Controller
 
             DB::commit();
 
+            // 📧 Notificar via email
+            $emails = [
+                'rhuan.borges@jgpconsultoria.com.br',
+                'elenito.libanio@jgpconsultoria.com.br'
+            
+            ];
+
+            foreach ($emails as $email) {
+                Mail::to($email)->send(new DavStatusMail($dav));
+            }
+
             return redirect()->route('dav.index')
                 ->with('success', 'DAV criada com sucesso.')
                 ->with('warning', count($avisos) ? implode(' ', $avisos) : null);
@@ -438,6 +452,18 @@ class DavController extends Controller
             'aprovado_em' => now(),
         ]);
 
+         $emails = [
+
+        'rhuan.borges@jgpconsultoria.com.br',
+        'elenito.libanio@jgpconsultoria.com.br'
+
+        ];
+
+        foreach ($emails as $email) {
+            Mail::to($email)->send(new DavStatusMail($dav));
+        }
+        
+
         return back()->with('success', 'DAV aprovado com sucesso.');
     }
 
@@ -459,6 +485,16 @@ class DavController extends Controller
             'status' => 'Reprovado',
             'motivo_reprovacao' => $request->motivo
         ]);
+
+        $emails = [
+            'rhuan.borges@jgpconsultoria.com.br',
+            'elenito.libanio@jgpconsultoria.com.br'
+        
+        ];
+
+        foreach ($emails as $email) {
+            Mail::to($email)->send(new DavStatusMail($dav));
+        }
 
         return back()->with('success', 'DAV reprovado com sucesso.');
     }
@@ -487,7 +523,7 @@ class DavController extends Controller
             // 🔒 BLOQUEAR se não for a mais recente
             if ($dav->id !== $ultimaDav->id) {
                 return back()->with('error', 'Só é permitido retificar a versão mais recente da DAV.');
-}
+            }
 
             // Bloquear se já existir filha pendente
             $existePendente = Dav::where(function ($q) use ($raizId) {
@@ -769,6 +805,16 @@ class DavController extends Controller
             ]);
 
             DB::commit();
+
+            // 📧 Notificar via email
+            $emails = [
+                'rhuan.borges@jgpconsultoria.com.br',
+                'elenito.libanio@jgpconsultoria.com.br'
+            ];
+
+            foreach ($emails as $email) {
+                Mail::to($email)->send(new DavStatusMail($dav));
+            }
 
             return redirect()->route('dav.show', $dav->id)
                 ->with('success', 'DAV atualizada com sucesso.');
