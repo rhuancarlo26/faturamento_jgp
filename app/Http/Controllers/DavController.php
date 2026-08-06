@@ -22,6 +22,14 @@ use App\Models\User;
 
 class DavController extends Controller
 {
+    private function getFiscalAtual(): array
+    {
+        return [
+            'nome' => config('dav.fiscal.nome', 'Alberto Yoshikasu Maeda'),
+            'cargo' => config('dav.fiscal.cargo', 'Coordenador de Estudos e Projetos Ambientais'),
+        ];
+    }
+
     public function index(Request $request)
     {
         $query = Dav::with('empreendimento');
@@ -125,6 +133,7 @@ class DavController extends Controller
         DB::beginTransaction();
 
         try {
+            $fiscalAtual = $this->getFiscalAtual();
 
             // 1️⃣ Criar o DAV principal
             $dav = Dav::create([
@@ -133,6 +142,8 @@ class DavController extends Controller
                 'n_ose' => $request->ose,
                 'produto' => $request->produto,
                 'subproduto' => $request->subproduto,
+                'fiscal_nome' => $fiscalAtual['nome'],
+                'fiscal_cargo' => $fiscalAtual['cargo'],
                 'status' => 'Pendente'
             ]);
 
@@ -504,6 +515,7 @@ class DavController extends Controller
         DB::beginTransaction();
 
         try {
+            $fiscalAtual = $this->getFiscalAtual();
 
             if ($dav->status !== 'Reprovado') {
                 return back()->with('error', 'Só é possível retificar DAV Reprovada.');
@@ -599,6 +611,8 @@ class DavController extends Controller
                 'n_ose' => $dav->n_ose,
                 'produto' => $dav->produto,
                 'subproduto' => $dav->subproduto,
+                'fiscal_nome' => $fiscalAtual['nome'],
+                'fiscal_cargo' => $fiscalAtual['cargo'],
                 'versao' => $novaVersao,
                 'dav_pai_id' => $raizId,
                 'status' => 'Pendente',

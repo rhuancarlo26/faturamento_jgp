@@ -19,8 +19,36 @@ const statusClass = computed(() => {
   return ''
 })
 
+// function formatDate(date) {
+//   if (!date) return '-'
+//   return new Date(date).toLocaleDateString('pt-BR')
+// }
+
 function formatDate(date) {
   if (!date) return '-'
+  
+  // 🔍 DEBUG
+  if (!window.loggedOnce) {
+    console.log('🔍 RAW date recebido:', date)
+    console.log('🔍 Type:', typeof date)
+    console.log('🔍 String:', String(date))
+    window.loggedOnce = true
+  }
+  
+  const dateString = String(date).trim()
+  
+  if (dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+    const parts = dateString.split('-')
+    const year = parseInt(parts[0])
+    const month = parseInt(parts[1]) - 1
+    const day = parseInt(parts[2])
+    
+    const d = new Date(Date.UTC(year, month, day))
+    
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'UTC' }
+    return d.toLocaleDateString('pt-BR', options)
+  }
+  
   return new Date(date).toLocaleDateString('pt-BR')
 }
 

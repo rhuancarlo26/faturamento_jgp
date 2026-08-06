@@ -160,6 +160,19 @@
 </head>
 <body>
 
+@php
+    $dataTrocaFiscal = config('dav.fiscal.data_troca', '2026-07-14');
+    $isLegadoDouglas = \Carbon\Carbon::parse($dav->created_at)->lt(\Carbon\Carbon::parse($dataTrocaFiscal));
+
+    $fiscalNome = $dav->fiscal_nome
+        ?? ($isLegadoDouglas ? 'Douglas Freitas de Almeida Filho' : config('dav.fiscal.nome', 'Alberto Yoshikasu Maeda'));
+
+    $fiscalCargo = $dav->fiscal_cargo
+        ?? ($isLegadoDouglas
+            ? 'Analista em Infraestrutura de Transportes - Eng. Civil'
+            : config('dav.fiscal.cargo', 'Coordenador de Estudos e Projetos Ambientais'));
+@endphp
+
 <div class="pdf-header">
     <div class="logo-left">
         <img src="{{ public_path('images/DNIT.jpg') }}" height="35">
@@ -435,10 +448,10 @@
             <div style="border-top:1px solid #000; width:220px; margin-bottom:6px;"></div>
                 
                 <div style="font-weight:bold;">
-                    Douglas Freitas de Almeida Filho
+                    {{ $fiscalNome }}
                 </div>
                 <div>
-                    Analista em Infraestrutura de Transportes - Eng. Civil
+                    {{ $fiscalCargo }}
                 </div>
                 <div>
                     Fiscal do Contrato nº. 94/2022

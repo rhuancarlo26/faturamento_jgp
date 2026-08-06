@@ -48,13 +48,18 @@ const processosPorBR = {
   'BR-010/MA': '50600.033749/2024-28',
   'BR-104/AL': '50600.005357/2025-50',
   'BR-222/CE': '50600.034578/2024-54',
-  'BR-235/SE': '50600.028817/2025-18'
+  'BR-235/SE': '50600.028817/2025-18',
+  'BR-330/MA': '50615.001029/2026-04'
 };
 
 const processoSEI = computed(() => processosPorBR[form.rodovia] || '');
 
 const flashSuccess = ref(null);
 const oficiosSalvos = ref([]);
+
+const filtrarMeusOficios = ref(false);
+const filtroRodoviaModelo = ref('');
+
 const precisaContadorManual = ref(false);
 const mostrarModalContador = ref(false);
 const contadorManualTemp = ref(null);
@@ -227,6 +232,15 @@ const carregarOficiosSalvos = async () => {
   }
 };
 
+const oficiosSalvosFiltrados = computed(() => {
+  return oficiosSalvos.value.filter((oficio) => {
+    const passaAutor = !filtrarMeusOficios.value || oficio.autor === user.id;
+    const passaRodovia = !filtroRodoviaModelo.value || oficio.rodovia === filtroRodoviaModelo.value;
+
+    return passaAutor && passaRodovia;
+  });
+});
+
 const preencherOficio = async (id) => {
   if (!id) return;
   try {
@@ -322,6 +336,7 @@ watch(() => form.oficio_dnit, (v) => {
                   <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
                   <option value="BR-230 PI/CE">BR-230 PI/CE</option>
                   <option value="BR-235/SE">BR-235/SE</option>
+                  <option value="BR-330/MA">BR-330/MA</option>
                 </select>
               </div>
               <div class="form-group col-md-4 mb-3">
@@ -356,24 +371,109 @@ watch(() => form.oficio_dnit, (v) => {
               </div>
             </div>
 
-            <div class="card mb-4 border-light shadow-sm" style="background: #f8f9fa;">
+            <div class="card mb-4 border-collapse shadow-sm" style="background: #f8f9fa;">
               <div class="card-body p-3">
-                <label for="oficioAnterior" class="form-label font-weight-semibold text-dark">
-                  <i class="fas fa-copy mr-2" style="color: #007BFF;"></i> Escolher Ofício Modelo
+
+                <!-- Título principal -->
+                <label for="oficioAnterior" class=" mb-3">
+                  <i class="fas fa-copy mr-2" style="color: #007BFF;"></i>
+                  Escolher Ofício Modelo
                 </label>
-                <select id="oficioAnterior" class="form-control custom-select" @change="preencherOficio($event.target.value)">
+
+                <!-- Subfiltros -->
+                <div
+                  class="d-flex align-items-end flex-wrap px-3 py-2 mb-3 rounded"
+                  style="background: #ffffff; border: 1px solid #e9ecef; gap: 18px;"
+                >
+
+                  <!-- Checkbox -->
+                  <div class="mb-1">
+                    <div class="custom-control custom-checkbox">
+                      <input
+                        type="checkbox"
+                        v-model="filtrarMeusOficios"
+                        id="filtrarMeusOficios"
+                        class="custom-control-input"
+                      >
+
+                      <label
+                        for="filtrarMeusOficios"
+                        class="custom-control-label text-dark"
+                        style="font-size: 0.95rem;"
+                      >
+                        Apenas meus ofícios
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Filtro BR -->
+                  <div style="min-width: 500px; margin-left: 322px;">
+
+
+                    <select
+                      v-model="filtroRodoviaModelo"
+                      id="filtroRodoviaModelo"
+                      class="form-control custom-select"
+                    >
+                      <option value="">Todas as BRs</option>
+                      <option value="CT-94-2022">CT-94-2022</option>
+                      <option value="BR-230/MA">BR-230/MA</option>
+                      <option value="BR-437 CE/RN">BR-437 CE/RN</option>
+                      <option value="BR-402 MA/PI">BR-402 MA/PI</option>
+                      <option value="BR-116 CE">BR-116 CE</option>
+                      <option value="BR-020 GO/BA">BR-020 GO/BA</option>
+                      <option value="BR-304 RN">BR-304 RN</option>
+                      <option value="BR-316 PI">BR-316 PI</option>
+                      <option value="BR-104 RN">BR-104 RN</option>
+                      <option value="BR-030 BA">BR-030 BA</option>
+                      <option value="BR-122 BA">BR-122 BA</option>
+                      <option value="BR-316 PI (km 33,54 ao km 55,60)">
+                        BR-316 PI (km 33,54 ao km 55,60)
+                      </option>
+                      <option value="BR-110/316/PE">BR-110/316/PE</option>
+                      <option value="BR-349/SE/AL">BR-349/SE/AL</option>
+                      <option value="BR-135/BA">BR-135/BA</option>
+                      <option value="BR-324/BA">BR-324/BA</option>
+                      <option value="BR-316/MA">BR-316/MA</option>
+                      <option value="BR-226/CE">BR-226/CE</option>
+                      <option value="BR-010/MA">BR-010/MA</option>
+                      <option value="BR-104/AL">BR-104/AL</option>
+                      <option value="BR-222/CE">BR-222/CE</option>
+                      <option value="BR-423, BR-424, BR-316 PE/AL">
+                        BR-423, BR-424, BR-316 PE/AL
+                      </option>
+                      <option value="BR-232 PE">BR-232 PE</option>
+                      <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
+                      <option value="BR-230 PI/CE">BR-230 PI/CE</option>
+                      <option value="BR-235/SE">BR-235/SE</option>
+                      <option value="BR-330/MA">BR-330/MA</option>
+                    </select>
+                  </div>
+
+                </div>
+
+                <!-- Select principal -->
+                <select
+                  id="oficioAnterior"
+                  class="form-control custom-select"
+                  @change="preencherOficio($event.target.value)"
+                >
                   <option value="">Selecione um modelo</option>
+
                   <option 
-                    v-for="o in oficiosSalvos" 
+                    v-for="o in oficiosSalvosFiltrados" 
                     :key="o.id" 
                     :value="o.id"
                     :title="o.oficio_num + ' - ' + o.assunto"
                   >
-                    <span class="font-weight-bold">{{ o.oficio_num }}</span> - 
-                    {{ o.assunto.length > 160 ? o.assunto.substring(0, 160) + '...' : o.assunto }}
+                    {{ o.oficio_num }} -
+                    {{ o.assunto.length > 160
+                      ? o.assunto.substring(0, 160) + '...'
+                      : o.assunto }}
                   </option>
 
                 </select>
+
               </div>
             </div>
 

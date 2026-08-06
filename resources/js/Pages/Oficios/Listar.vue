@@ -193,7 +193,8 @@ const baixarOficio = async (oficio) => {
             'BR-010/MA': '50600.033749/2024-28',
             'BR-104/AL': '50600.005357/2025-50',
             'BR-222/CE': '50600.034578/2024-54',
-            'BR-235/SE': '50600.028817/2025-18'
+            'BR-235/SE': '50600.028817/2025-18',
+            'BR-330/MA': '50615.001029/2026-04'
         }[oficio.rodovia] || '';
 
         doc.setData({
@@ -325,6 +326,7 @@ const logout = () => {
                         <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
                         <option value="BR-230 PI/CE">BR-230 PI/CE</option>
                         <option value="BR-235/SE">BR-235/SE</option>
+                        <option value="BR-330/MA">BR-330/MA</option>
                     </select>
                 </div>
 
@@ -455,6 +457,7 @@ const logout = () => {
                                 <option value="BR-407, BR-324 BA">BR-407, BR-324 BA</option>
                                 <option value="BR-230 PI/CE">BR-230 PI/CE</option>
                                 <option value="BR-235/SE">BR-235/SE</option>
+                                <option value="BR-330/MA">BR-330/MA</option>
                             </select>
                         </div>
 

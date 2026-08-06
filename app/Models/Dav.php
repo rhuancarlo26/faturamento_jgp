@@ -14,6 +14,8 @@ class Dav extends Model
         'n_ose',
         'produto',
         'subproduto',
+        'fiscal_nome',
+        'fiscal_cargo',
         'status',
         'motivo_reprovacao',
         'aprovado_por',
