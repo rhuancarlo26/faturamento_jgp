@@ -207,7 +207,7 @@ class OficiosController extends Controller
 
 
 
-   public function download($id)
+    public function download($id)
     {
         $oficio = DB::table('registros_oficios')->find($id);
         if (!$oficio) {
@@ -296,7 +296,7 @@ class OficiosController extends Controller
         return $rodoviaSan;
     }
 
-        private function montarNumeroOficio(string $tipo, int $sequencia, int $ano, string $rodoviaSan): string
+    private function montarNumeroOficio(string $tipo, int $sequencia, int $ano, string $rodoviaSan): string
     {
         if (stripos($rodoviaSan, 'CT942022') !== false) {
             $rodoviaOriginal = 'CT-94-2022';
