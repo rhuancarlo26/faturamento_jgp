@@ -130,6 +130,7 @@ function retificarDav(id) {
               {{ dav.motivo_reprovacao }}
             </div>
           </div>
+
         </div>
 
         <!-- CABEÇALHO -->
@@ -149,7 +150,6 @@ function retificarDav(id) {
         <div class="section">
           <div class="section-title">Dados Gerais</div>
 
-          <!-- Linha 1 -->
           <div class="grid-2">
             <div class="campo-linha">
               <strong>Coordenador:</strong>
@@ -157,26 +157,25 @@ function retificarDav(id) {
             </div>
 
             <div class="campo-linha">
+              <strong>Empreendimento:</strong>
+              <span>{{ dav.empreendimento?.cod_emp }}</span>
+            </div>
+
+            <div class="campo-linha">
               <strong>Nº OSE:</strong>
               <span>{{ dav.n_ose }}</span>
             </div>
-          </div>
 
-          <!-- Linha 2 -->
-          <div class="grid-2 mt">
             <div class="campo-linha">
-              <strong>Empreendimento:</strong>
-              <span>{{ dav.empreendimento?.cod_emp }}</span>
+              <strong>Nº SEI:</strong>
+              <span>{{ dav.n_sei_ose || '-' }}</span>
             </div>
 
             <div class="campo-linha">
               <strong>Produto:</strong>
               <span>{{ dav.produto }}</span>
             </div>
-          </div>
 
-          <!-- Linha 3 -->
-          <div class="mt">
             <div class="campo-linha">
               <strong>Subproduto:</strong>
               <span>{{ dav.subproduto }}</span>
@@ -285,6 +284,10 @@ function retificarDav(id) {
 
               </div>
             </div>
+          </div>
+          <div v-if="prof.desc_trecho" class="campo-linha mt">
+            <strong>Descrição do trecho:</strong>
+            <span style="white-space: pre-line">{{ prof.desc_trecho }}</span>
           </div>
         </div>
 
@@ -446,10 +449,10 @@ function retificarDav(id) {
               </button>
             </div>
 
+            </div>
           </div>
-        </div>
 
-      </div>
+        </div>
     </div>
 
   </AuthenticatedLayout>

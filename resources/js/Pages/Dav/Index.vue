@@ -35,6 +35,29 @@ function statusExibicao(status) {
   return status
 }
 
+function textoPrazo(prazo) {
+  if (!prazo) return '-'
+  if (prazo.situacao === 'pos_periodo') return 'Pós Período'
+
+  return `${prazo.dias} ${prazo.dias === 1 ? 'dia' : 'dias'}`
+}
+
+function classePrazo(prazo) {
+  if (!prazo) return ''
+  return prazo.situacao === 'no_prazo' ? 'prazo-verde' : 'prazo-vermelho'
+}
+
+function possuiAviso(prazo) {
+  return prazo && prazo.situacao !== 'no_prazo'
+}
+
+function formatarData(data) {
+  if (!data) return '-'
+
+  const [ano, mes, dia] = data.split('-')
+  return `${dia}/${mes}/${ano}`
+}
+
 </script>
 
 <template>
@@ -183,6 +206,7 @@ function statusExibicao(status) {
                 <th>Produto</th>
                 <th>Versão</th>
                 <th>Status</th>
+                <th>Prazo de Solicitação</th>
                 <th class="text-end">Ações</th>
               </tr>
             </thead>
@@ -193,7 +217,7 @@ function statusExibicao(status) {
 
                 <!-- Linha título do grupo -->
                 <tr class="linha-grupo">
-                  <td colspan="6" class="grupo-titulo">
+                  <td colspan="7" class="grupo-titulo">
                     <strong>
                       DAV 
                     </strong>
@@ -229,6 +253,25 @@ function statusExibicao(status) {
                     >
                       {{ statusExibicao(d.status) }}
                     </span>
+                  </td>
+
+                  <td>
+                    <div class="prazo-solicitacao">
+                      <span :class="classePrazo(d.prazo_solicitacao)">
+                        {{ textoPrazo(d.prazo_solicitacao) }}
+                      </span>
+
+                      <span
+                        v-if="possuiAviso(d.prazo_solicitacao)"
+                        class="prazo-info"
+                        aria-label="Ver data da solicitação"
+                      >
+                        i
+                        <span class="prazo-tooltip">
+                          Solicitação registrada em {{ formatarData(d.prazo_solicitacao.data_solicitacao) }}. Início da viagem em {{ formatarData(d.prazo_solicitacao.data_viagem) }}.
+                        </span>
+                      </span>
+                    </div>
                   </td>
 
                   <td class="text-end">
@@ -318,6 +361,73 @@ function statusExibicao(status) {
 /* hover suave nas versões */
 .linha-versao:hover{
   background:#f8f9fa;
+}
+
+.prazo-solicitacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.prazo-verde {
+  color: #198754;
+}
+
+.prazo-vermelho {
+  color: #dc3545;
+}
+
+.prazo-info {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #0d6efd;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  cursor: help;
+}
+
+.prazo-tooltip {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  display: none;
+  width: 260px;
+  padding: 7px 9px;
+  border-radius: 5px;
+  background: #212529;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
+  transform: translateX(-50%);
+}
+
+.prazo-tooltip::after {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  border: 5px solid transparent;
+  border-top-color: #212529;
+  content: '';
+  transform: translateX(-50%);
+}
+
+.prazo-info:hover .prazo-tooltip {
+  display: block;
 }
 
 </style>

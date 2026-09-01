@@ -22,6 +22,7 @@ const form = ref({
   coordenador: '',
   empreendimento_id: '',
   ose: '',
+  n_sei_ose: '',
   produto: '',
   subproduto: '',
   profissionais: []
@@ -34,6 +35,7 @@ function estruturaProfissionalVazia() {
     data_ini: '',
     data_fim: '',
     diarias: null,
+    desc_trecho: '',
     trechos: [
       {
         origem: '',
@@ -65,6 +67,7 @@ onMounted(async () => {
   form.value.coordenador = props.dav.coordenador
   form.value.empreendimento_id = props.dav.empreendimento_id
   form.value.ose = props.dav.n_ose
+  form.value.n_sei_ose = props.dav.n_sei_ose || ''
   form.value.produto = props.dav.produto
   form.value.subproduto = props.dav.subproduto
 
@@ -83,6 +86,7 @@ onMounted(async () => {
     data_ini: p.data_ini,
     data_fim: p.data_fim,
     diarias: p.diarias,
+    desc_trecho: p.desc_trecho || '',
     trechos: p.trechos.map(t => ({
       origem: t.origem,
       destino: t.destino,
@@ -213,7 +217,7 @@ function salvar() {
 
         <!-- ================= DADOS GERAIS ================= -->
         <div class="row">
-          <div class="col-md-4 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label fw-semibold">Coordenador Setorial</label>
             <input v-model="form.coordenador"
                    type="text"
@@ -221,7 +225,7 @@ function salvar() {
                    required />
           </div>
 
-          <div class="col-md-4 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label fw-semibold">Empreendimento</label>
             <select v-model="form.empreendimento_id"
                     class="form-control campo-moderno"
@@ -235,13 +239,21 @@ function salvar() {
             </select>
           </div>
 
-          <div class="col-md-4 mb-3">
+          <div class="col-md-6 mb-3">
             <label class="form-label fw-semibold">Nº OSE</label>
             <input v-model="form.ose"
                    type="text"
                    class="form-control campo-moderno bg-light text-muted"
                    readonly />
           </div>
+
+          <div class="col-md-6 mb-3">
+            <label class="form-label fw-semibold">Nº SEI</label>
+            <input v-model="form.n_sei_ose"
+                   type="text"
+                   class="form-control campo-moderno" />
+          </div>
+
         </div>
 
         <!-- ================= PRODUTO ================= -->
@@ -279,6 +291,7 @@ function salvar() {
               Carregando subprodutos...
             </div>
           </div>
+
         </div>
 
         <!-- ================= PROFISSIONAIS ================= -->
@@ -446,6 +459,13 @@ function salvar() {
               </div>
 
             </div>
+          </div>
+          <div class="mt-3">
+            <label class="form-label fw-semibold">Descrição do trecho</label>
+            <textarea v-model="prof.desc_trecho"
+                      class="form-control campo-moderno"
+                      rows="3"
+                      placeholder="Informe uma descrição complementar do trecho"></textarea>
           </div>
         </div>
 

@@ -211,12 +211,19 @@
 
         <tr>
             <td>
-                <strong>Produto:</strong> {{ $dav->produto }}
+                <strong>Nº SEI:</strong> {{ $dav->n_sei_ose ?? '-' }}
             </td>
             <td>
+                <strong>Produto:</strong> {{ $dav->produto }}
+            </td>
+        </tr>
+
+        <tr>
+            <td colspan="2">
                 <strong>Subproduto:</strong> {{ $dav->subproduto }}
             </td>
         </tr>
+
     </table>
 </div>
 
@@ -300,6 +307,12 @@
 
                 </div>
             @endforeach
+        </div>
+    @endif
+
+    @if($prof->desc_trecho)
+        <div style="margin-top: 14px; white-space: pre-line;">
+            <strong>Descrição do trecho:</strong> {{ $prof->desc_trecho }}
         </div>
     @endif
 

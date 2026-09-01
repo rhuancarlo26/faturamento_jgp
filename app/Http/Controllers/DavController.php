@@ -19,6 +19,7 @@ use App\Models\Subproduto;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\DavStatusMail;
 use App\Models\User;
+use Carbon\Carbon;
 
 class DavController extends Controller
 {
@@ -48,8 +49,28 @@ class DavController extends Controller
 
         $davs = $query
             ->withCount('profissionais')
+            ->withMin('profissionais', 'data_ini')
             ->orderByDesc('id')
             ->get()
+             ->each(function (Dav $dav) {
+                if (!$dav->profissionais_min_data_ini) {
+                    $dav->setAttribute('prazo_solicitacao', null);
+                    return;
+                }
+
+                $dataSolicitacao = Carbon::parse($dav->created_at)->startOfDay();
+                $dataViagem = Carbon::parse($dav->profissionais_min_data_ini)->startOfDay();
+                $diasAteViagem = $dataSolicitacao->diffInDays($dataViagem, false);
+
+                $dav->setAttribute('prazo_solicitacao', [
+                    'dias' => $diasAteViagem,
+                    'situacao' => $diasAteViagem < 0
+                        ? 'pos_periodo'
+                        : ($diasAteViagem < 15 ? 'atrasado' : 'no_prazo'),
+                    'data_viagem' => $dataViagem->toDateString(),
+                    'data_solicitacao' => $dataSolicitacao->toDateString(),
+                ]);
+            })
             ->groupBy(function ($dav) {
                 return $dav->dav_pai_id ?? $dav->id;
             })
@@ -140,6 +161,7 @@ class DavController extends Controller
                 'coordenador' => $request->coordenador,
                 'empreendimento_id' => $request->empreendimento_id,
                 'n_ose' => $request->ose,
+                'n_sei_ose' => $request->n_sei_ose,
                 'produto' => $request->produto,
                 'subproduto' => $request->subproduto,
                 'fiscal_nome' => $fiscalAtual['nome'],
@@ -154,6 +176,7 @@ class DavController extends Controller
                     'dav_id' => $dav->id,
                     'profissional_id' => $item['profissional_id'],
                     'funcao' => $item['funcao'],
+                    'desc_trecho' => $item['desc_trecho'] ?? null,
                     'data_ini' => $item['data_ini'],
                     'data_fim' => $item['data_fim'],
                     'diarias' => $item['diarias'] ?? 0,
@@ -276,7 +299,7 @@ class DavController extends Controller
             // 📧 Notificar via email
             $emails = [
                 'rhuan.borges@jgpconsultoria.com.br',
-                'elenito.libanio@jgpconsultoria.com.br'
+                'alberto.maeda@dnit.gov.br'
             
             ];
 
@@ -465,8 +488,11 @@ class DavController extends Controller
 
          $emails = [
 
-        'rhuan.borges@jgpconsultoria.com.br',
-        'elenito.libanio@jgpconsultoria.com.br'
+            'elenito.libanio@jgpconsultoria.com.br',
+            'carolina.sampaio@jgpconsultoria.com.br',
+            'josecarlos.pereira@jgpconsultoria.com.br',
+            'alberto.maeda@dnit.gov.br',
+            'rhuan.borges@jgpconsultoria.com.br'
 
         ];
 
@@ -498,8 +524,10 @@ class DavController extends Controller
         ]);
 
         $emails = [
-            'rhuan.borges@jgpconsultoria.com.br',
-            'elenito.libanio@jgpconsultoria.com.br'
+            'elenito.libanio@jgpconsultoria.com.br',
+            'carolina.sampaio@jgpconsultoria.com.br',
+            'josecarlos.pereira@jgpconsultoria.com.br',
+            'rhuan.borges@jgpconsultoria.com.br'
         
         ];
 
@@ -609,6 +637,7 @@ class DavController extends Controller
                 'coordenador' => $dav->coordenador,
                 'empreendimento_id' => $dav->empreendimento_id,
                 'n_ose' => $dav->n_ose,
+                'n_sei_ose' => $dav->n_sei_ose,
                 'produto' => $dav->produto,
                 'subproduto' => $dav->subproduto,
                 'fiscal_nome' => $fiscalAtual['nome'],
@@ -631,6 +660,7 @@ class DavController extends Controller
                     'dav_id' => $novaDav->id,
                     'profissional_id' => $prof->profissional_id,
                     'funcao' => $prof->funcao,
+                    'desc_trecho' => $prof->desc_trecho,
                     'data_ini' => $prof->data_ini,
                     'data_fim' => $prof->data_fim,
                     'diarias' => $prof->diarias,
@@ -716,6 +746,7 @@ class DavController extends Controller
                 'coordenador' => $request->coordenador,
                 'empreendimento_id' => $request->empreendimento_id,
                 'n_ose' => $request->ose,
+                'n_sei_ose' => $request->n_sei_ose,
                 'produto' => $request->produto,
                 'subproduto' => $request->subproduto,
             ]);
@@ -739,6 +770,7 @@ class DavController extends Controller
                     'dav_id' => $dav->id,
                     'profissional_id' => $item['profissional_id'],
                     'funcao' => $item['funcao'],
+                    'desc_trecho' => $item['desc_trecho'] ?? null,
                     'data_ini' => $item['data_ini'],
                     'data_fim' => $item['data_fim'],
                     'diarias' => $item['diarias'] ?? 0,
@@ -823,7 +855,7 @@ class DavController extends Controller
             // 📧 Notificar via email
             $emails = [
                 'rhuan.borges@jgpconsultoria.com.br',
-                'elenito.libanio@jgpconsultoria.com.br'
+                'alberto.maeda@dnit.gov.br'
             ];
 
             foreach ($emails as $email) {

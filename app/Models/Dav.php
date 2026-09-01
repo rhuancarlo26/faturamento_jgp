@@ -12,6 +12,7 @@ class Dav extends Model
         'coordenador',
         'empreendimento_id',
         'n_ose',
+        'n_sei_ose',
         'produto',
         'subproduto',
         'fiscal_nome',

@@ -12,6 +12,7 @@ class DavProfissionalDocumento extends Model
         'dav_id',
         'profissional_id',
         'funcao',
+        'desc_trecho',
         'data_ini',
         'data_fim',
         'diarias'
